@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>价格体系过渡计算器 - 体系一 → 体系二</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .input-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .input-card h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .result-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .result-card h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .price-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .price-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .price-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .price-table tr:hover {
+            background: #e9ecef;
+        }
+
+        .diff-up {
+            color: #22c55e;
+            font-weight: bold;
+            background: rgba(34, 197, 94, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .diff-down {
+            color: #ef4444;
+            font-weight: bold;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .diff-same {
+            color: #6b7280;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            background: #f3f4f6;
+        }
+
+        .analysis-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .analysis-section h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .analysis-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .analysis-item h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .analysis-item p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .badge-danger {
+            background: #ef4444;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 价格体系过渡计算器</h1>
+            <p>体系一（首重+续重）→ 体系二（公开价×折扣×新燃油）折扣反推与价差分析工具</p>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="input-card">
+            <h2>📋 参数输入</h2>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>产品名称</label>
+                    <input type="text" id="productName" placeholder="例如：商业件标准" value="商业件标准">
+                </div>
+                <div class="form-group">
+                    <label>首重价格 (¥/0.5kg)</label>
+                    <input type="number" id="baseWeightPrice" placeholder="例如：50" value="50" onchange="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>续重价格 (¥/0.5kg)</label>
+                    <input type="number" id="additionalWeightPrice" placeholder="例如：13" value="13" onchange="calculate()">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>体系一（老报价）燃油附加费率 (%)</label>
+                    <input type="number" id="oldFuelRate" placeholder="如果老报价已含燃油则填0" value="0" step="0.1" onchange="calculate()" min="0" max="100">
+                    <small>如果老报价已包含燃油费，请填写0%；如果需要单独加燃油，填写对应百分比</small>
+                </div>
+                <div class="form-group">
+                    <label>体系二（新报价）燃油附加费率 (%)</label>
+                    <input type="number" id="newFuelRate" placeholder="跟随官网浮动" value="25" step="0.1" onchange="calculate()" min="0" max="100">
+                    <small>新体系燃油费跟随官网浮动，可调整</small>
+                </div>
+            </div>
+
+            <button class="btn" onclick="calculate()">📊 计算折扣与价差</button>
+        </div>
+
+        <!-- 价格对比表 -->
+        <div class="result-card">
+            <h2>📊 价格对比表</h2>
+            <table class="price-table">
+                <thead>
+                    <tr>
+                        <th>重量</th>
+                        <th>公开价</th>
+                        <th>体系一<br><small>(不含燃油)</small></th>
+                        <th>体系一<br><small>(含老燃油)</small></th>
+                        <th>体系二<br><small>(不含燃油)</small></th>
+                        <th>体系二<br><small>(含新燃油)</small></th>
+                        <th>反推折扣</th>
+                        <th>价差</th>
+                        <th>波动</th>
+                    </tr>
+                </thead>
+                <tbody id="priceTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分析区域 -->
+        <div class="analysis-section">
+            <h2>📈 分析结果</h2>
+            <div id="analysisContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // 公开价表（体系二公开价，不含燃油）
+        const publicPrices = {
+            0.5: 295, 1: 370, 1.5: 445, 2: 520, 2.5: 595,
+            3: 670, 3.5: 750, 4: 830, 4.5: 910, 5: 990,
+            5.5: 1070, 6: 1150, 6.5: 1230, 7: 1310,
+            7.5: 1390, 8: 1470, 8.5: 1550, 9: 1630,
+            9.5: 1710, 10: 1790, 10.5: 1870, 11: 1950,
+            11.5: 2030, 12: 2110, 12.5: 2190, 13: 2270,
+            13.5: 2350, 14: 2430, 14.5: 2510, 15: 2590,
+            15.5: 2670, 16: 2750, 16.5: 2830, 17: 2910,
+            17.5: 2990, 18: 3070, 18.5: 3150, 19: 3230,
+            19.5: 3310, 20: 3390
+        };
+
+        function calculate() {
+            const basePrice = parseFloat(document.getElementById('baseWeightPrice').value);
+            const additionalPrice = parseFloat(document.getElementById('additionalWeightPrice').value);
+            const oldFuelRate = parseFloat(document.getElementById('oldFuelRate').value) / 100;
+            const newFuelRate = parseFloat(document.getElementById('newFuelRate').value) / 100;
+
+            const tbody = document.getElementById('priceTableBody');
+            tbody.innerHTML = '';
+
+            let diffCount = { up: 0, down: 0, same: 0 };
+            const results = [];
+
+            // 按顺序遍历所有重量段（0.5kg - 20kg，每0.5kg一档）
+            const sortedWeights = Object.keys(publicPrices).sort((a, b) => parseFloat(a) - parseFloat(b));
+            for (let weight of sortedWeights) {
+                const publicPrice = publicPrices[weight];
+                const additionalCount = Math.ceil((weight - 0.5) / 0.5);
+
+                // 体系一价格（不含燃油）= 首重 + 续重
+                const oldPriceNoFuel = basePrice + additionalPrice * additionalCount;
+
+                // 体系一价格（含老燃油）= 旧价 × (1 + 老燃油费率)
+                const oldPriceWithFuel = oldPriceNoFuel * (1 + oldFuelRate);
+
+                // 反推折扣：旧价(含老燃油) = 公开价 × 折扣 × (1 + 新燃油费率)
+                // 折扣 = 旧价(含老燃油) / [公开价 × (1 + 新燃油费率)]
+                const discount = oldPriceWithFuel / (publicPrice * (1 + newFuelRate));
+
+                // 体系二价格（含新燃油）= 公开价 × 折扣 × (1 + 新燃油费率)
+                const newPriceWithFuel = publicPrice * discount * (1 + newFuelRate);
+
+                // 体系二价格（不含燃油）= 公开价 × 折扣
+                const newPriceNoFuel = publicPrice * discount;
+
+                // 价差 = 新价(含新燃油) - 旧价(含老燃油)
+                const diff = newPriceWithFuel - oldPriceWithFuel;
+                const fluctuation = ((diff / oldPriceWithFuel) * 100).toFixed(2);
+
+                // 统计
+                if (diff > 0.01) diffCount.up++;
+                else if (diff < -0.01) diffCount.down++;
+                else diffCount.same++;
+
+                results.push({
+                    weight,
+                    publicPrice,
+                    oldPriceNoFuel,
+                    oldPriceWithFuel,
+                    newPriceNoFuel,
+                    newPriceWithFuel,
+                    discount,
+                    diff,
+                    fluctuation
+                });
+            }
+
+            // 渲染表格
+            results.forEach(item => {
+                const row = document.createElement('tr');
+
+                let diffClass, diffText;
+                if (item.diff > 0.01) {
+                    diffClass = 'diff-up';
+                    diffText = '+' + item.diff.toFixed(2);
+                } else if (item.diff < -0.01) {
+                    diffClass = 'diff-down';
+                    diffText = item.diff.toFixed(2);
+                } else {
+                    diffClass = 'diff-same';
+                    diffText = '0.00';
+                }
+
+                row.innerHTML = `
+                    <td>${item.weight}</td>
+                    <td>¥${item.publicPrice}</td>
+                    <td>¥${item.oldPriceNoFuel.toFixed(2)}</td>
+                    <td>¥${item.oldPriceWithFuel.toFixed(2)}</td>
+                    <td>¥${item.newPriceNoFuel.toFixed(2)}</td>
+                    <td>¥${item.newPriceWithFuel.toFixed(2)}</td>
+                    <td>${(item.discount * 100).toFixed(2)}%</td>
+                    <td><span class="${diffClass}">${diffText}</span></td>
+                    <td>${item.fluctuation}%</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // 分析
+            const avgDiscount = results.reduce((sum, r) => sum + r.discount, 0) / results.length;
+            const maxDiff = Math.max(...results.map(r => Math.abs(r.diff)));
+            const avgFluctuation = Math.abs(results.reduce((sum, r) => sum + r.diff, 0) / results.reduce((sum, r) => sum + r.oldPriceWithFuel, 0) * 100);
+
+            const analysisDiv = document.getElementById('analysisContent');
+            analysisDiv.innerHTML = `
+                <div class="analysis-item">
+                    <h3>📊 折扣率分析</h3>
+                    <p><strong>体系一燃油费率：</strong>${(oldFuelRate * 100).toFixed(1)}%</p>
+                    <p><strong>体系二燃油费率：</strong>${(newFuelRate * 100).toFixed(1)}%</p>
+                    <p><strong>平均折扣率：</strong>${(avgDiscount * 100).toFixed(2)}%</p>
+                    <p><strong>折扣范围：</strong>${(Math.min(...results.map(r => r.discount)) * 100).toFixed(2)}% - ${(Math.max(...results.map(r => r.discount)) * 100).toFixed(2)}%</p>
+                    <p>建议使用统一折扣：<strong>${(Math.floor(avgDiscount * 1000) / 1000 * 100).toFixed(2)}%</strong>（略低于平均值以确保不涨价）</p>
+                </div>
+
+                <div class="analysis-item">
+                    <h3>💰 价格波动分析（对比：新价格(含新燃油${(newFuelRate * 100).toFixed(1)}%) vs 老价格(含老燃油${(oldFuelRate * 100).toFixed(1)}%)）</h3>
+                    <p><strong>涨价重量段：</strong>${diffCount.up} 个 <span class="badge badge-warning">⚠️</span></p>
+                    <p><strong>降价重量段：</strong>${diffCount.down} 个 <span class="badge badge-success">✓</span></p>
+                    <p><strong>持平重量段：</strong>${diffCount.same} 个 <span class="badge badge-success">✓</span></p>
+                    <p><strong>最大价差：</strong>¥${maxDiff.toFixed(2)}</p>
+                    <p><strong>平均波动幅度：</strong>${avgFluctuation.toFixed(2)}%</p>
+                </div>
+
+                <div class="analysis-item">
+                    <h3>🎯 过渡建议</h3>
+                    <p>
+                        ${avgFluctuation < 1
+                            ? '✅ <strong>价格波动较小（<1%），建议直接过渡</strong>'
+                            : avgFluctuation < 3
+                                ? '⚠️ <strong>价格波动适中（<3%），建议与客户沟通后过渡</strong>'
+                                : '❌ <strong>价格波动较大（>3%），建议调整折扣率或分批过渡</strong>'
+                        }
+                    </p>
+                </div>
+            `;
+        }
+
+        // 页面加载时自动计算
+        window.onload = function() {
+            calculate();
+        };
+    </script>
+</body>
+</html>
