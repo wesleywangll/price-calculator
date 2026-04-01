@@ -1558,10 +1558,13 @@
                 const weight = parseFloat(row[weightCol]) || 0;
                 const price = parseFloat(row[priceCol]) || 0;
 
+                console.log(`行${i}: 原始产品="${rawProduct}", 计价重=${weight}, 运费=${price}`);
+
                 // 只统计20kg以内的数据
                 if (weight <= 20 && weight > 0) {
                     // 规范化产品名称
                     const product = normalizeProductName(rawProduct);
+                    console.log(`  → 规范化后产品: "${product}"`);
 
                     if (product) {
                         billData.push({
@@ -1569,6 +1572,8 @@
                             weight: weight,
                             price: price
                         });
+                    } else {
+                        console.log(`  → 未匹配到已知产品，已跳过`);
                     }
                 }
             }
