@@ -1495,7 +1495,7 @@
             // 行1: 标题（客户名称）
             // 行2: 表头
             // 行3+: 数据
-            // 关键列：销售产品(6), 实重(9), 计价重(11), 速递运费(12)
+            // 关键列：产品名称、计价重、运费
 
             if (data.length < 3) {
                 alert('账单文件格式不正确，数据行数不足');
@@ -1507,12 +1507,17 @@
 
             // 查找表头行（第2行）
             const headerRow = data[1];
-            const productCol = headerRow.indexOf('销售产品');
-            const weightCol = headerRow.indexOf('计价重');
-            const priceCol = headerRow.indexOf('速递运费');
+            console.log('账单表头：', headerRow);
+
+            // 查找关键列（支持多种可能的列名）
+            const productCol = headerRow.findIndex(col => col && col.includes('产品'));
+            const weightCol = headerRow.findIndex(col => col && (col.includes('计价重') || col.includes('重量')));
+            const priceCol = headerRow.findIndex(col => col && (col.includes('运费') || col.includes('金额')));
+
+            console.log('找到的列索引：', { productCol, weightCol, priceCol });
 
             if (productCol === -1 || weightCol === -1 || priceCol === -1) {
-                alert('账单格式不正确，缺少必要的列（销售产品、计价重、速递运费）');
+                alert('账单格式不正确，缺少必要的列。\n\n实际表头：' + headerRow.join('\n'));
                 return;
             }
 
