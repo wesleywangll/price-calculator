@@ -47,7 +47,6 @@
 
         .main-content {
             display: grid;
-            grid-template-columns: 350px 1fr;
             gap: 20px;
         }
 
@@ -135,14 +134,14 @@
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
         }
 
-        .btn-secondary {
+        .print {
             background: white;
             color: #667eea;
             border: 2px solid #667eea;
             margin-top: 10px;
         }
 
-        .btn-secondary:hover {
+        .print:hover {
             background: #f8f9ff;
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
         }
@@ -151,6 +150,148 @@
             display: flex;
             gap: 10px;
             margin-top: 15px;
+        }
+
+        /* 选项卡样式 */
+        .tab-container {
+            background: white;
+            padding: 0;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .tab-header {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 18px;
+            background: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-button:hover {
+            background: #f8f9ff;
+            color: #667eea;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* 文件上传样式 */
+        .upload-area {
+            border: 2px dashed #d0d0d0;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8f0ff;
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 12px;
+        }
+
+        /* 分析结果表格 */
+        .analysis-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 15px;
+        }
+
+        .analysis-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 10px;
+            text-align: center;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .analysis-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .analysis-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .weight-distribution-bar {
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .weight-distribution-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .discount-recommendation {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .discount-recommendation.suggested {
+            background: #ecfdf5;
+            border-left-color: #22c55e;
+        }
+
+        .discount-recommendation.warning {
+            background: #fffbeb;
+            border-left-color: #f59e0b;
+        }
+
+        /* 客户账单分析区域 */
+        #analysisSection {
+            display: none;
         }
 
         .result-card {
@@ -401,6 +542,22 @@
         </div>
 
         <div class="main-content">
+            <!-- 选项卡导航 -->
+            <div class="tab-container">
+                <div class="tab-header">
+                    <button class="tab-button active" id="calculatorTab" onclick="switchTab('calculator')">
+                        <span>🔄</span>
+                        价格过渡计算器
+                    </button>
+                    <button class="tab-button" id="analysisTab" onclick="switchTab('analysis')">
+                        <span>📊</span>
+                        客户账单分析
+                    </button>
+                </div>
+            </div>
+
+            <!-- 价格过渡计算器区域 -->
+            <div id="calculatorSection" style="display: grid; grid-template-columns: 350px 1fr; gap: 20px;">
             <!-- 左侧输入区域 -->
             <div class="sidebar">
                 <div class="input-card">
@@ -480,7 +637,7 @@
                             <span>📄</span>
                             导出 PDF 报价单
                         </button>
-                        <button class="btn btn-secondary" onclick="window.print()">
+                        <button class="btn print" onclick="window.print()">
                             <span>🖨️</span>
                             打印
                         </button>
@@ -572,6 +729,88 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 客户账单分析区域 -->
+            <div id="analysisSection">
+                <!-- 文件上传区域 -->
+                <div class="result-card">
+                    <h2>
+                        📁 上传客户账单
+                    </h2>
+                    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-icon">📤</div>
+                        <div class="upload-text">点击或拖拽上传Excel账单文件</div>
+                        <div class="upload-hint">支持 .xlsx 格式的客户账单文件</div>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none" onchange="handleFileUpload(event)">
+                    </div>
+                </div>
+
+                <!-- 分析结果区域 -->
+                <div class="result-card" id="billAnalysisResult" style="display: none;">
+                    <h2>
+                        📊 客户账单分析结果
+                        <span id="customerName" style="font-size: 14px; color: #666; font-weight: normal;"></span>
+                    </h2>
+
+                    <!-- 基础统计信息 -->
+                    <div class="analysis-section">
+                        <div class="analysis-item">
+                            <h3>📋 账单概览</h3>
+                            <p><strong>总票数：</strong><span id="totalShipments" class="highlight-value">--</span></p>
+                            <p><strong>总运费：</strong><span id="totalRevenue" class="highlight-value">--</span></p>
+                            <p><strong>平均每票运费：</strong><span id="avgRevenuePerShipment" class="highlight-value">--</span></p>
+                            <p><strong>平均每票重量：</strong><span id="avgWeight" class="highlight-value">--</span></p>
+                        </div>
+
+                        <div class="analysis-item">
+                            <h3>📦 产品分布</h3>
+                            <div id="productDistribution"></div>
+                        </div>
+
+                        <div class="analysis-item">
+                            <h3>📊 重量段分布（20kg以内）</h3>
+                            <div id="weightDistribution"></div>
+                        </div>
+                    </div>
+
+                    <!-- 重量段详细分析 -->
+                    <div class="result-card" style="margin-top: 20px;">
+                        <h3>📋 重量段详细分析</h3>
+                        <div class="table-container">
+                            <table class="analysis-table" id="weightAnalysisTable">
+                                <thead>
+                                    <tr>
+                                        <th>重量段</th>
+                                        <th>票数</th>
+                                        <th>占比</th>
+                                        <th>运费合计</th>
+                                        <th>运费占比</th>
+                                        <th>平均运费</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="weightAnalysisBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 折扣建议 -->
+                    <div class="result-card" style="margin-top: 20px;">
+                        <h3>💡 折扣建议（基于新体系）</h3>
+                        <div class="form-group">
+                            <label>选择产品</label>
+                            <select id="productSelect" class="form-select" onchange="updateDiscountSuggestion()">
+                                <option value="">请选择产品</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>新体系燃油附加费率 (%)</label>
+                            <input type="number" id="newFuelRateAnalysis" value="25" step="0.1" min="0" max="100" onchange="updateDiscountSuggestion()">
+                        </div>
+                        <div id="discountSuggestionResult"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -579,8 +818,31 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- jsPDF 核心库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- SheetJS 用于解析Excel文件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
+        // 选项卡切换
+        function switchTab(tabName) {
+            const calculatorTab = document.getElementById('calculatorTab');
+            const analysisTab = document.getElementById('analysisTab');
+
+            const calculatorSection = document.getElementById('calculatorSection');
+            const analysisSection = document.getElementById('analysisSection');
+
+            if (tabName === 'calculator') {
+                calculatorTab.classList.add('active');
+                analysisTab.classList.remove('active');
+                calculatorSection.style.display = 'grid';
+                analysisSection.style.display = 'none';
+            } else {
+                calculatorTab.classList.remove('active');
+                analysisTab.classList.add('active');
+                calculatorSection.style.display = 'none';
+                analysisSection.style.display = 'block';
+            }
+        }
+
         // 公开价表（体系二公开价，不含燃油）
         const publicPrices = {
             0.5: 295, 1: 370, 1.5: 445, 2: 520, 2.5: 595,
@@ -595,7 +857,16 @@
             19.5: 3310, 20: 3390
         };
 
+        // 老体系价格表（体系一，不含燃油，仅针对20kg以内）
+        const oldSystemPrices = {
+            '限时达大阪': { baseWeightPrice: 69, additionalWeightPrice: 18, fuelRate: 0.25 },
+            '限时达东京': { baseWeightPrice: 69, additionalWeightPrice: 18, fuelRate: 0.25 },
+            '商业件标准': { baseWeightPrice: 50, additionalWeightPrice: 13, fuelRate: 0.00 },
+            '商业件经济': { baseWeightPrice: 0, additionalWeightPrice: 0, fuelRate: 0.00 } // 经济价按公斤算，稍后处理
+        };
+
         let currentResults = [];
+        let currentBillData = null;
 
         function toggleDiscountInput() {
             const mode = document.getElementById('calcMode').value;
@@ -1158,7 +1429,352 @@
         // 页面加载时自动计算
         window.onload = function() {
             calculate();
+            setupDragAndDrop();
         };
+
+        // 拖拽上传设置
+        function setupDragAndDrop() {
+            const uploadArea = document.getElementById('uploadArea');
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+        }
+
+        // 处理文件上传
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        // 处理Excel文件
+        function handleFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                alert('请上传Excel文件（.xlsx或.xls格式）');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    // 解析账单数据
+                    parseBillData(jsonData);
+                } catch (error) {
+                    alert('读取Excel文件失败：' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 解析账单数据
+        function parseBillData(data) {
+            // 青岛金豆账单格式：
+            // 行1: 标题（客户名称）
+            // 行2: 表头
+            // 行3+: 数据
+            // 关键列：销售产品(6), 实重(9), 计价重(11), 速递运费(12)
+
+            if (data.length < 3) {
+                alert('账单文件格式不正确，数据行数不足');
+                return;
+            }
+
+            // 提取客户名称
+            const customerName = data[0][0] || '未知客户';
+
+            // 查找表头行（第2行）
+            const headerRow = data[1];
+            const productCol = headerRow.indexOf('销售产品');
+            const weightCol = headerRow.indexOf('计价重');
+            const priceCol = headerRow.indexOf('速递运费');
+
+            if (productCol === -1 || weightCol === -1 || priceCol === -1) {
+                alert('账单格式不正确，缺少必要的列（销售产品、计价重、速递运费）');
+                return;
+            }
+
+            // 提取数据（从第3行开始）
+            const billData = [];
+            for (let i = 2; i < data.length; i++) {
+                const row = data[i];
+                if (!row[productCol]) continue; // 跳过空行
+
+                const product = row[productCol];
+                const weight = parseFloat(row[weightCol]) || 0;
+                const price = parseFloat(row[priceCol]) || 0;
+
+                // 只统计20kg以内的数据
+                if (weight <= 20 && weight > 0) {
+                    billData.push({
+                        product: product,
+                        weight: weight,
+                        price: price
+                    });
+                }
+            }
+
+            if (billData.length === 0) {
+                alert('未找到有效数据，请检查账单格式');
+                return;
+            }
+
+            currentBillData = {
+                customerName: customerName,
+                data: billData
+            };
+
+            displayAnalysisResults();
+        }
+
+        // 显示分析结果
+        function displayAnalysisResults() {
+            if (!currentBillData) return;
+
+            const { customerName, data } = currentBillData;
+
+            // 显示分析结果区域
+            document.getElementById('billAnalysisResult').style.display = 'block';
+            document.getElementById('customerName').textContent = customerName;
+
+            // 基础统计
+            const totalShipments = data.length;
+            const totalRevenue = data.reduce((sum, item) => sum + item.price, 0);
+            const avgRevenuePerShipment = totalRevenue / totalShipments;
+            const avgWeight = data.reduce((sum, item) => sum + item.weight, 0) / totalShipments;
+
+            document.getElementById('totalShipments').textContent = totalShipments;
+            document.getElementById('totalRevenue').textContent = '¥' + totalRevenue.toFixed(2);
+            document.getElementById('avgRevenuePerShipment').textContent = '¥' + avgRevenuePerShipment.toFixed(2);
+            document.getElementById('avgWeight').textContent = avgWeight.toFixed(2) + ' kg';
+
+            // 产品分布
+            const productStats = {};
+            data.forEach(item => {
+                if (!productStats[item.product]) {
+                    productStats[item.product] = { count: 0, revenue: 0, weight: 0 };
+                }
+                productStats[item.product].count++;
+                productStats[item.product].revenue += item.price;
+                productStats[item.product].weight += item.weight;
+            });
+
+            let productDistHtml = '';
+            for (const [product, stats] of Object.entries(productStats)) {
+                const percentage = ((stats.count / totalShipments) * 100).toFixed(1);
+                productDistHtml += `
+                    <p>
+                        <strong>${product}：</strong>
+                        <span class="highlight-value">${stats.count}</span> 票 (${percentage}%)
+                    </p>
+                `;
+            }
+            document.getElementById('productDistribution').innerHTML = productDistHtml;
+
+            // 填充产品选择下拉框
+            const productSelect = document.getElementById('productSelect');
+            productSelect.innerHTML = '<option value="">请选择产品</option>';
+            for (const product of Object.keys(productStats)) {
+                productSelect.innerHTML += `<option value="${product}">${product}</option>`;
+            }
+
+            // 重量段分布
+            displayWeightDistribution(data);
+        }
+
+        // 显示重量段分布
+        function displayWeightDistribution(data) {
+            const weightSegments = [
+                { label: '0-3kg', min: 0, max: 3 },
+                { label: '3-10kg', min: 3, max: 10 },
+                { label: '10-15kg', min: 10, max: 15 },
+                { label: '15-20kg', min: 15, max: 20 }
+            ];
+
+            const totalRevenue = data.reduce((sum, item) => sum + item.price, 0);
+            const tbody = document.getElementById('weightAnalysisBody');
+            tbody.innerHTML = '';
+
+            weightSegments.forEach(segment => {
+                const segmentData = data.filter(item => item.weight > segment.min && item.weight <= segment.max);
+                const count = segmentData.length;
+                const revenue = segmentData.reduce((sum, item) => sum + item.price, 0);
+                const countPercent = ((count / data.length) * 100).toFixed(2);
+                const revenuePercent = ((revenue / totalRevenue) * 100).toFixed(2);
+                const avgPrice = count > 0 ? (revenue / count) : 0;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${segment.label}</td>
+                        <td>${count}</td>
+                        <td>
+                            <div class="weight-distribution-bar">
+                                <div class="weight-distribution-fill" style="width: ${countPercent}%"></div>
+                            </div>
+                            ${countPercent}%
+                        </td>
+                        <td>¥${revenue.toFixed(2)}</td>
+                        <td>${revenuePercent}%</td>
+                        <td>¥${avgPrice.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // 更新折扣建议
+        function updateDiscountSuggestion() {
+            const product = document.getElementById('productSelect').value;
+            const newFuelRate = parseFloat(document.getElementById('newFuelRateAnalysis').value) / 100;
+            const resultDiv = document.getElementById('discountSuggestionResult');
+
+            if (!product || !currentBillData) {
+                resultDiv.innerHTML = '<p style="color: #999;">请选择产品</p>';
+                return;
+            }
+
+            // 获取该产品的数据
+            const productData = currentBillData.data.filter(item => item.product === product);
+            if (productData.length === 0) {
+                resultDiv.innerHTML = '<p style="color: #999;">该产品暂无数据</p>';
+                return;
+            }
+
+            // 计算实际总运费
+            const actualTotalRevenue = productData.reduce((sum, item) => sum + item.price, 0);
+
+            // 获取产品价格配置
+            const productConfig = oldSystemPrices[product];
+            if (!productConfig) {
+                resultDiv.innerHTML = '<p style="color: #999;">该产品价格配置未找到</p>';
+                return;
+            }
+
+            // 计算每个重量段的建议折扣
+            const discountSuggestions = [];
+            const weights = Object.keys(publicPrices).sort((a, b) => parseFloat(a) - parseFloat(b));
+
+            weights.forEach(weight => {
+                const publicPrice = publicPrices[weight];
+                const additionalCount = Math.ceil((weight - 0.5) / 0.5);
+
+                // 老体系价格（含燃油）= 首重 + 续重 * (1 + 老燃油)
+                let oldPriceWithFuel;
+                if (product === '商业件经济') {
+                    // 经济价按公斤算，但这里我们简化处理，使用标准价格
+                    oldPriceWithFuel = publicPrice * 0.5 * (1 + productConfig.fuelRate); // 假设5折
+                } else {
+                    oldPriceWithFuel = (productConfig.baseWeightPrice + productConfig.additionalWeightPrice * additionalCount) * (1 + productConfig.fuelRate);
+                }
+
+                // 计算该重量段在新体系下，保持价格不变的折扣
+                // 新价 = 公开价 * 折扣 * (1 + 新燃油)
+                // 折扣 = 老价 / (公开价 * (1 + 新燃油))
+                const discount = oldPriceWithFuel / (publicPrice * (1 + newFuelRate));
+
+                discountSuggestions.push({
+                    weight: weight,
+                    discount: discount,
+                    oldPrice: oldPriceWithFuel
+                });
+            });
+
+            // 计算平均折扣
+            const avgDiscount = discountSuggestions.reduce((sum, item) => sum + item.discount, 0) / discountSuggestions.length;
+
+            // 基于客户实际重量分布加权计算折扣
+            let weightedDiscountSum = 0;
+            let totalWeightSum = 0;
+            productData.forEach(item => {
+                // 找到最接近的重量段
+                const closestWeight = weights.reduce((prev, curr) => {
+                    return (Math.abs(curr - item.weight) < Math.abs(prev - item.weight) ? curr : prev);
+                });
+                const suggestion = discountSuggestions.find(s => s.weight === closestWeight);
+                if (suggestion) {
+                    weightedDiscountSum += suggestion.discount * item.price;
+                    totalWeightSum += item.price;
+                }
+            });
+
+            const weightedAvgDiscount = weightedDiscountSum / totalWeightSum;
+
+            // 计算持平/略低/略高折扣
+            const flatDiscount = weightedAvgDiscount;
+            const lowerDiscount = Math.max(0.3, flatDiscount - 0.02); // 低2个百分点
+            const higherDiscount = Math.min(1.0, flatDiscount + 0.02); // 高2个百分点
+
+            // 计算不同折扣下的总运费
+            const calculateNewTotal = (discount) => {
+                let total = 0;
+                productData.forEach(item => {
+                    const publicPrice = publicPrices[item.weight] || publicPrices[Math.max(...weights.map(parseFloat).filter(w => w <= item.weight))];
+                    if (publicPrice) {
+                        total += publicPrice * discount * (1 + newFuelRate);
+                    }
+                });
+                return total;
+            };
+
+            const flatTotal = calculateNewTotal(flatDiscount);
+            const lowerTotal = calculateNewTotal(lowerDiscount);
+            const higherTotal = calculateNewTotal(higherDiscount);
+
+            const flatDiff = flatTotal - actualTotalRevenue;
+            const lowerDiff = lowerTotal - actualTotalRevenue;
+            const higherDiff = higherTotal - actualTotalRevenue;
+
+            // 显示结果
+            resultDiv.innerHTML = `
+                <div class="discount-recommendation suggested">
+                    <h4 style="color: #16a34a; margin-bottom: 10px;">✅ 持平折扣建议</h4>
+                    <p><strong>建议折扣率：</strong><span class="highlight-value">${(flatDiscount * 100).toFixed(2)}%</span></p>
+                    <p><strong>预计总运费：</strong>¥${flatTotal.toFixed(2)} （实际：¥${actualTotalRevenue.toFixed(2)}，差额：¥${flatDiff.toFixed(2)}）</p>
+                </div>
+
+                <div class="discount-recommendation warning">
+                    <h4 style="color: #d97706; margin-bottom: 10px;">⚠️ 略低折扣建议（降价优惠）</h4>
+                    <p><strong>建议折扣率：</strong><span class="highlight-value">${(lowerDiscount * 100).toFixed(2)}%</span></p>
+                    <p><strong>预计总运费：</strong>¥${lowerTotal.toFixed(2)} （实际：¥${actualTotalRevenue.toFixed(2)}，差额：¥${lowerDiff.toFixed(2)}，降幅：${(Math.abs(lowerDiff) / actualTotalRevenue * 100).toFixed(2)}%）</p>
+                </div>
+
+                <div class="discount-recommendation">
+                    <h4 style="color: #667eea; margin-bottom: 10px;">📈 略高折扣建议（涨价）</h4>
+                    <p><strong>建议折扣率：</strong><span class="highlight-value">${(higherDiscount * 100).toFixed(2)}%</span></p>
+                    <p><strong>预计总运费：</strong>¥${higherTotal.toFixed(2)} （实际：¥${actualTotalRevenue.toFixed(2)}，差额：¥${higherDiff.toFixed(2)}，涨幅：${(higherDiff / actualTotalRevenue * 100).toFixed(2)}%）</p>
+                </div>
+
+                <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="margin-bottom: 10px;">💡 折扣建议说明</h4>
+                    <ul style="font-size: 13px; line-height: 1.8; color: #666; padding-left: 20px;">
+                        <li><strong>持平折扣：</strong>基于客户实际发货重量分布计算，保持总运费不变</li>
+                        <li><strong>略低折扣：</strong>给客户更多优惠，有利于维护客户关系</li>
+                        <li><strong>略高折扣：</strong>适当提价，提升利润空间</li>
+                        <li>建议根据客户重要程度、市场竞争情况等因素选择合适的折扣率</li>
+                    </ul>
+                </div>
+            `;
+        }
     </script>
 </body>
 </html>
