@@ -860,10 +860,10 @@
 
         // 老体系价格表（体系一，不含燃油，仅针对20kg以内）
         const oldSystemPrices = {
-            '限时达大阪': { baseWeightPrice: 69, additionalWeightPrice: 18, fuelRate: 0.25 },
-            '限时达东京': { baseWeightPrice: 69, additionalWeightPrice: 18, fuelRate: 0.25 },
-            '商业件标准': { baseWeightPrice: 50, additionalWeightPrice: 13, fuelRate: 0.00 },
-            '商业件经济': { baseWeightPrice: 0, additionalWeightPrice: 0, fuelRate: 0.00 } // 经济价按公斤算，稍后处理
+            '日本商业件': { baseWeightPrice: 50, additionalWeightPrice: 13, fuelRate: 0.00 },
+            '日本商业件经济': { baseWeightPrice: 20, additionalWeightPrice: 0, fuelRate: 0.00 }, // 经济按公斤算
+            '大阪特快+限时达商业': { baseWeightPrice: 69, additionalWeightPrice: 18, fuelRate: 0.25 },
+            '日本商业件特快(青岛大连)': { baseWeightPrice: 62, additionalWeightPrice: 17, fuelRate: 0.00 }
         };
 
         let currentResults = [];
@@ -1527,23 +1527,49 @@
                 return;
             }
 
+            // 产品名称映射（支持模糊匹配）
+            const productMapping = {
+                '日本商业件': ['日本商业件'],
+                '日本商业件经济': ['日本商业件经济'],
+                '大阪特快+限时达商业': ['大阪特快+限时达商业'],
+                '日本商业件特快(青岛大连)': ['日本商业件特快(青岛大连)']
+            };
+
+            // 根据销售产品名称找到对应的标准产品名
+            function normalizeProductName(productName) {
+                if (!productName) return null;
+                for (const [standardName, keywords] of Object.entries(productMapping)) {
+                    for (const keyword of keywords) {
+                        if (productName.includes(keyword)) {
+                            return standardName;
+                        }
+                    }
+                }
+                return null;
+            }
+
             // 提取数据（从表头行之后开始）
             const billData = [];
             for (let i = headerRowIndex + 1; i < data.length; i++) {
                 const row = data[i];
                 if (!row[productCol]) continue; // 跳过空行
 
-                const product = row[productCol];
+                const rawProduct = row[productCol];
                 const weight = parseFloat(row[weightCol]) || 0;
                 const price = parseFloat(row[priceCol]) || 0;
 
                 // 只统计20kg以内的数据
                 if (weight <= 20 && weight > 0) {
-                    billData.push({
-                        product: product,
-                        weight: weight,
-                        price: price
-                    });
+                    // 规范化产品名称
+                    const product = normalizeProductName(rawProduct);
+
+                    if (product) {
+                        billData.push({
+                            product: product,
+                            weight: weight,
+                            price: price
+                        });
+                    }
                 }
             }
 
