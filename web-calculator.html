@@ -1554,21 +1554,28 @@
             
             for (let i = headerRowIndex + 1; i < data.length; i++) {
                 const row = data[i];
-                if (!row[productCol]) continue; // 跳过空行
-
+                
+                // 跳过空行或者产品列为空的行（但不要跳过值为"0"的行）
                 const rawProduct = row[productCol];
+                if (rawProduct === undefined || rawProduct === null || rawProduct === '' || String(rawProduct).trim() === '') {
+                    continue;
+                }
+
+                // 跳过包含"对公支付宝"等非产品信息的行
+                if (String(rawProduct).includes('支付宝') || String(rawProduct).includes('户名') || String(rawProduct).includes('账号')) {
+                    continue;
+                }
+
                 const weight = parseFloat(row[weightCol]) || 0;
                 const price = parseFloat(row[priceCol]) || 0;
 
                 // 记录所有产品名称
-                if (rawProduct) {
-                    uniqueProducts.add(rawProduct);
-                }
+                uniqueProducts.add(rawProduct);
 
                 console.log(`行${i}: 原始产品="${rawProduct}", 计价重=${weight}, 运费=${price}`);
 
                 // 只统计20kg以内的数据
-                if (weight <= 20 && weight > 0) {
+                if (weight <= 20 && weight > 0 && price > 0) {
                     // 规范化产品名称
                     const product = normalizeProductName(rawProduct);
                     console.log(`  → 规范化后产品: "${product}"`);
