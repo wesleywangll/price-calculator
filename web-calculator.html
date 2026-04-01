@@ -1491,23 +1491,29 @@
 
         // 解析账单数据
         function parseBillData(data) {
-            // 青岛金豆账单格式：
-            // 行1: 标题（客户名称）
-            // 行2: 表头
-            // 行3+: 数据
-            // 关键列：产品名称、计价重、运费
+            console.log('Excel原始数据前10行：', data.slice(0, 10));
 
-            if (data.length < 3) {
-                alert('账单文件格式不正确，数据行数不足');
+            // 自动查找包含表头的行（查找包含"产品"或"运费"的行）
+            let headerRowIndex = -1;
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.some(col => col && (col.includes('产品') || col.includes('运费')))) {
+                    headerRowIndex = i;
+                    console.log('找到表头行，索引：', i, '内容：', row);
+                    break;
+                }
+            }
+
+            if (headerRowIndex === -1) {
+                alert('账单格式不正确，未找到表头行（应包含"产品"或"运费"列）');
                 return;
             }
 
-            // 提取客户名称
-            const customerName = data[0][0] || '未知客户';
+            // 提取客户名称（从表头行之前的内容获取）
+            const customerName = headerRowIndex > 0 ? (data[headerRowIndex - 1][0] || '未知客户') : '未知客户';
 
-            // 查找表头行（第2行）
-            const headerRow = data[1];
-            console.log('账单表头：', headerRow);
+            // 查找表头行
+            const headerRow = data[headerRowIndex];
 
             // 查找关键列（支持多种可能的列名）
             const productCol = headerRow.findIndex(col => col && col.includes('产品'));
@@ -1521,9 +1527,9 @@
                 return;
             }
 
-            // 提取数据（从第3行开始）
+            // 提取数据（从表头行之后开始）
             const billData = [];
-            for (let i = 2; i < data.length; i++) {
+            for (let i = headerRowIndex + 1; i < data.length; i++) {
                 const row = data[i];
                 if (!row[productCol]) continue; // 跳过空行
 
