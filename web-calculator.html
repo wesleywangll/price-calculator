@@ -746,6 +746,44 @@
                     </div>
                 </div>
 
+                <!-- 账单取值说明 -->
+                <div class="result-card" style="margin-top: 16px; background: #f0f7ff; border: 1px solid #bfdbfe;">
+                    <h3 style="color: #1d4ed8; margin-bottom: 12px;">📋 账单取值规则说明</h3>
+                    <p style="font-size: 13px; color: #374151; margin-bottom: 10px;">系统将从账单中自动提取以下字段，请确认账单包含这些列，否则数据可能提取不完整：</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+                        <div style="background: white; border-radius: 6px; padding: 10px; border-left: 3px solid #3b82f6;">
+                            <strong style="color: #1d4ed8;">📦 销售产品</strong>
+                            <p style="color: #555; margin-top: 4px; line-height: 1.6;">仅提取以下4种产品：<br>
+                            ✅ 日本商业件<br>
+                            ✅ 日本商业件经济<br>
+                            ✅ 大阪特快+限时达商业<br>
+                            ✅ 日本商业件特快(青岛大连)<br>
+                            <span style="color: #ef4444;">❌ 其他产品（如"空运"）将被忽略</span></p>
+                        </div>
+                        <div style="background: white; border-radius: 6px; padding: 10px; border-left: 3px solid #10b981;">
+                            <strong style="color: #065f46;">⚖️ 计价重</strong>
+                            <p style="color: #555; margin-top: 4px; line-height: 1.6;">取账单中"计价重"列的值<br>
+                            ✅ 仅统计 <strong>20kg以内</strong> 的数据<br>
+                            ✅ 计价重须大于0<br>
+                            <span style="color: #ef4444;">❌ 超过20kg的记录将被忽略</span></p>
+                        </div>
+                        <div style="background: white; border-radius: 6px; padding: 10px; border-left: 3px solid #f59e0b;">
+                            <strong style="color: #92400e;">💰 速递运费</strong>
+                            <p style="color: #555; margin-top: 4px; line-height: 1.6;">取账单中"速递运费"列的值<br>
+                            ✅ 运费须大于0才计入统计<br>
+                            <span style="color: #ef4444;">❌ 运费为0的记录将被忽略</span><br>
+                            <span style="color: #6b7280;">注：含IOSS税金的票请留意</span></p>
+                        </div>
+                        <div style="background: white; border-radius: 6px; padding: 10px; border-left: 3px solid #8b5cf6;">
+                            <strong style="color: #5b21b6;">📊 数据范围</strong>
+                            <p style="color: #555; margin-top: 4px; line-height: 1.6;">系统自动识别表头位置<br>
+                            ✅ 客户名称：从表头行上方提取<br>
+                            ✅ 表头识别：自动查找含"产品"/"运费"的行<br>
+                            <span style="color: #6b7280;">如结果异常，请检查以上字段是否存在</span></p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 分析结果区域 -->
                 <div class="result-card" id="billAnalysisResult" style="display: none;">
                     <h2>
@@ -798,12 +836,6 @@
                     <!-- 折扣建议 -->
                     <div class="result-card" style="margin-top: 20px;">
                         <h3>💡 折扣建议（基于新体系）</h3>
-                        <div class="form-group">
-                            <label>选择产品</label>
-                            <select id="productSelect" class="form-select" onchange="updateDiscountSuggestion()">
-                                <option value="">请选择产品</option>
-                            </select>
-                        </div>
                         <div class="form-group">
                             <label>新体系燃油附加费率 (%)</label>
                             <input type="number" id="newFuelRateAnalysis" value="25" step="0.1" min="0" max="100" onchange="updateDiscountSuggestion()">
@@ -1652,15 +1684,11 @@
             }
             document.getElementById('productDistribution').innerHTML = productDistHtml;
 
-            // 填充产品选择下拉框
-            const productSelect = document.getElementById('productSelect');
-            productSelect.innerHTML = '<option value="">请选择产品</option>';
-            for (const product of Object.keys(productStats)) {
-                productSelect.innerHTML += `<option value="${product}">${product}</option>`;
-            }
-
             // 重量段分布
             displayWeightDistribution(data);
+
+            // 自动计算折扣建议
+            updateDiscountSuggestion();
         }
 
         // 显示重量段分布
@@ -1704,133 +1732,227 @@
 
         // 更新折扣建议
         function updateDiscountSuggestion() {
-            const product = document.getElementById('productSelect').value;
             const newFuelRate = parseFloat(document.getElementById('newFuelRateAnalysis').value) / 100;
             const resultDiv = document.getElementById('discountSuggestionResult');
 
-            if (!product || !currentBillData) {
-                resultDiv.innerHTML = '<p style="color: #999;">请选择产品</p>';
+            if (!currentBillData) {
+                resultDiv.innerHTML = '<p style="color: #999;">请先上传账单</p>';
                 return;
             }
 
-            // 获取该产品的数据
-            const productData = currentBillData.data.filter(item => item.product === product);
-            if (productData.length === 0) {
-                resultDiv.innerHTML = '<p style="color: #999;">该产品暂无数据</p>';
+            const data = currentBillData.data;
+            if (data.length === 0) {
+                resultDiv.innerHTML = '<p style="color: #999;">暂无有效数据</p>';
                 return;
             }
 
-            // 计算实际总运费
-            const actualTotalRevenue = productData.reduce((sum, item) => sum + item.price, 0);
+            // ========================================================
+            // 核心逻辑：
+            // 1. 逐票根据产品类型和计价重，用体系一价格反推该票对应新体系的折扣
+            //    折扣 = 体系一价格(含老燃油) / (公开价 × (1 + 新燃油))
+            // 2. 以"票数加权"（即重量段分布）求综合折扣率
+            //    重量段占比高 → 该重量段折扣对综合折扣影响大
+            // 3. 持平折扣 = 综合折扣率（误差0-3%）
+            //    较低折扣 = 综合折扣率 - (3%~5%)
+            //    较高折扣 = 综合折扣率 + (3%~5%)
+            // ========================================================
 
-            // 获取产品价格配置
-            const productConfig = oldSystemPrices[product];
-            if (!productConfig) {
-                resultDiv.innerHTML = '<p style="color: #999;">该产品价格配置未找到</p>';
-                return;
-            }
+            // 辅助函数：计算某产品在某计价重下的体系一价格（含老燃油）
+            function calcOldPrice(product, weight) {
+                const config = oldSystemPrices[product];
+                if (!config) return null;
 
-            // 计算每个重量段的建议折扣
-            const discountSuggestions = [];
-            const weights = Object.keys(publicPrices).sort((a, b) => parseFloat(a) - parseFloat(b));
-
-            weights.forEach(weight => {
-                const publicPrice = publicPrices[weight];
-                const additionalCount = Math.ceil((weight - 0.5) / 0.5);
-
-                // 老体系价格（含燃油）= 首重 + 续重 * (1 + 老燃油)
-                let oldPriceWithFuel;
-                if (product === '商业件经济') {
-                    // 经济价按公斤算，但这里我们简化处理，使用标准价格
-                    oldPriceWithFuel = publicPrice * 0.5 * (1 + productConfig.fuelRate); // 假设5折
-                } else {
-                    oldPriceWithFuel = (productConfig.baseWeightPrice + productConfig.additionalWeightPrice * additionalCount) * (1 + productConfig.fuelRate);
+                // 经济件：按公斤单价 × 重量（向上取整0.5kg）
+                if (product === '日本商业件经济') {
+                    const billedWeight = Math.ceil(weight * 2) / 2; // 向上取整至0.5kg
+                    return config.baseWeightPrice * billedWeight * (1 + config.fuelRate);
                 }
 
-                // 计算该重量段在新体系下，保持价格不变的折扣
-                // 新价 = 公开价 * 折扣 * (1 + 新燃油)
-                // 折扣 = 老价 / (公开价 * (1 + 新燃油))
-                const discount = oldPriceWithFuel / (publicPrice * (1 + newFuelRate));
+                // 其他产品：首重 + 续重
+                // 首重0.5kg，续重按0.5kg递增
+                const additionalSteps = Math.max(0, Math.ceil((weight - 0.5) / 0.5));
+                const basePrice = config.baseWeightPrice + config.additionalWeightPrice * additionalSteps;
+                return basePrice * (1 + config.fuelRate);
+            }
 
-                discountSuggestions.push({
-                    weight: weight,
-                    discount: discount,
-                    oldPrice: oldPriceWithFuel
-                });
-            });
+            // 辅助函数：查询公开价（精确匹配或向上取最近档）
+            function getPublicPrice(weight) {
+                // 向上取整到0.5kg
+                const billedWeight = Math.ceil(weight * 2) / 2;
+                const key = billedWeight.toString();
+                if (publicPrices[key]) return publicPrices[key];
+                // 如果直接没有，往上找最近档
+                const sortedKeys = Object.keys(publicPrices).map(Number).sort((a, b) => a - b);
+                const found = sortedKeys.find(k => k >= billedWeight);
+                return found ? publicPrices[found.toString()] : null;
+            }
 
-            // 计算平均折扣
-            const avgDiscount = discountSuggestions.reduce((sum, item) => sum + item.discount, 0) / discountSuggestions.length;
-
-            // 基于客户实际重量分布加权计算折扣
-            let weightedDiscountSum = 0;
-            let totalWeightSum = 0;
-            productData.forEach(item => {
-                // 找到最接近的重量段
-                const closestWeight = weights.reduce((prev, curr) => {
-                    return (Math.abs(curr - item.weight) < Math.abs(prev - item.weight) ? curr : prev);
-                });
-                const suggestion = discountSuggestions.find(s => s.weight === closestWeight);
-                if (suggestion) {
-                    weightedDiscountSum += suggestion.discount * item.price;
-                    totalWeightSum += item.price;
-                }
-            });
-
-            const weightedAvgDiscount = weightedDiscountSum / totalWeightSum;
-
-            // 计算持平/略低/略高折扣
-            const flatDiscount = weightedAvgDiscount;
-            const lowerDiscount = Math.max(0.3, flatDiscount - 0.02); // 低2个百分点
-            const higherDiscount = Math.min(1.0, flatDiscount + 0.02); // 高2个百分点
-
-            // 计算不同折扣下的总运费
-            const calculateNewTotal = (discount) => {
-                let total = 0;
-                productData.forEach(item => {
-                    const publicPrice = publicPrices[item.weight] || publicPrices[Math.max(...weights.map(parseFloat).filter(w => w <= item.weight))];
-                    if (publicPrice) {
-                        total += publicPrice * discount * (1 + newFuelRate);
-                    }
-                });
-                return total;
+            // 逐票计算每票所需折扣
+            const ticketDiscounts = [];
+            const weightSegmentStats = {
+                '0-3kg':   { count: 0, discountSum: 0 },
+                '3-10kg':  { count: 0, discountSum: 0 },
+                '10-15kg': { count: 0, discountSum: 0 },
+                '15-20kg': { count: 0, discountSum: 0 }
             };
 
-            const flatTotal = calculateNewTotal(flatDiscount);
-            const lowerTotal = calculateNewTotal(lowerDiscount);
-            const higherTotal = calculateNewTotal(higherDiscount);
+            data.forEach(item => {
+                const oldPrice = calcOldPrice(item.product, item.weight);
+                const publicPrice = getPublicPrice(item.weight);
+
+                if (!oldPrice || !publicPrice || publicPrice === 0) return;
+
+                // 折扣 = 体系一价 / (公开价 × (1 + 新燃油))
+                const discount = oldPrice / (publicPrice * (1 + newFuelRate));
+
+                ticketDiscounts.push({ weight: item.weight, discount, product: item.product });
+
+                // 按重量段分组
+                let seg = null;
+                if (item.weight <= 3)  seg = '0-3kg';
+                else if (item.weight <= 10) seg = '3-10kg';
+                else if (item.weight <= 15) seg = '10-15kg';
+                else if (item.weight <= 20) seg = '15-20kg';
+                if (seg) {
+                    weightSegmentStats[seg].count++;
+                    weightSegmentStats[seg].discountSum += discount;
+                }
+            });
+
+            if (ticketDiscounts.length === 0) {
+                resultDiv.innerHTML = '<p style="color: #999;">无法计算折扣，请检查账单数据</p>';
+                return;
+            }
+
+            // 找出票数最多的重量段（主力货型）
+            const dominantSeg = Object.entries(weightSegmentStats)
+                .filter(([, v]) => v.count > 0)
+                .sort((a, b) => b[1].count - a[1].count)[0];
+
+            const dominantSegName = dominantSeg ? dominantSeg[0] : '未知';
+            const dominantSegCount = dominantSeg ? dominantSeg[1].count : 0;
+            const dominantSegPercent = ((dominantSegCount / ticketDiscounts.length) * 100).toFixed(1);
+
+            // 以票数加权计算综合折扣率（即重量段分布决定折扣权重）
+            const overallDiscount = ticketDiscounts.reduce((sum, t) => sum + t.discount, 0) / ticketDiscounts.length;
+
+            // 主力重量段的平均折扣（作为参考基准）
+            const dominantSegAvgDiscount = dominantSeg
+                ? dominantSeg[1].discountSum / dominantSeg[1].count
+                : overallDiscount;
+
+            // 三档折扣：持平、较低、较高
+            // 持平 = 综合折扣率（基于重量段分布加权，误差0-3%范围内）
+            const flatDiscount = overallDiscount;
+            // 较低 = 整体折扣率 - 4%（3%~5%之间取4%）
+            const lowerDiscount = Math.max(0.25, flatDiscount - 0.04);
+            // 较高 = 整体折扣率 + 4%（3%~5%之间取4%）
+            const higherDiscount = Math.min(1.0, flatDiscount + 0.04);
+
+            // 计算各折扣下的预计总运费（逐票用公开价×折扣×(1+新燃油)）
+            const actualTotalRevenue = data.reduce((sum, item) => sum + item.price, 0);
+
+            function calcTotalWithDiscount(discount) {
+                return data.reduce((sum, item) => {
+                    const pub = getPublicPrice(item.weight);
+                    if (!pub) return sum;
+                    return sum + pub * discount * (1 + newFuelRate);
+                }, 0);
+            }
+
+            const flatTotal = calcTotalWithDiscount(flatDiscount);
+            const lowerTotal = calcTotalWithDiscount(lowerDiscount);
+            const higherTotal = calcTotalWithDiscount(higherDiscount);
 
             const flatDiff = flatTotal - actualTotalRevenue;
             const lowerDiff = lowerTotal - actualTotalRevenue;
             const higherDiff = higherTotal - actualTotalRevenue;
 
+            const flatDiffPct = (flatDiff / actualTotalRevenue * 100).toFixed(1);
+            const lowerDiffPct = (lowerDiff / actualTotalRevenue * 100).toFixed(1);
+            const higherDiffPct = (higherDiff / actualTotalRevenue * 100).toFixed(1);
+
+            // 重量段分布摘要
+            const segSummaryRows = Object.entries(weightSegmentStats)
+                .map(([seg, v]) => {
+                    if (v.count === 0) return '';
+                    const pct = ((v.count / ticketDiscounts.length) * 100).toFixed(1);
+                    const avgD = (v.discountSum / v.count * 100).toFixed(2);
+                    const isDominant = seg === dominantSegName;
+                    return `<tr style="${isDominant ? 'background:#fef9c3;font-weight:600;' : ''}">
+                        <td style="padding:6px 10px;">${seg}${isDominant ? ' ⭐主力' : ''}</td>
+                        <td style="padding:6px 10px; text-align:center;">${v.count}票 (${pct}%)</td>
+                        <td style="padding:6px 10px; text-align:center;">${avgD}%</td>
+                    </tr>`;
+                }).join('');
+
             // 显示结果
             resultDiv.innerHTML = `
-                <div class="discount-recommendation suggested">
-                    <h4 style="color: #16a34a; margin-bottom: 10px;">✅ 持平折扣建议</h4>
+                <!-- 重量段折扣分析 -->
+                <div style="background:#f8f9fa; border-radius:8px; padding:14px; margin-bottom:14px;">
+                    <h4 style="margin-bottom:10px; color:#374151;">📊 重量段折扣分析（票数加权基准）</h4>
+                    <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+                        主力货型：<strong style="color:#d97706;">${dominantSegName}</strong>，占比 ${dominantSegPercent}%，该段平均折扣率 <strong>${(dominantSegAvgDiscount * 100).toFixed(2)}%</strong>
+                    </p>
+                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <thead>
+                            <tr style="background:#e5e7eb;">
+                                <th style="padding:6px 10px; text-align:left;">重量段</th>
+                                <th style="padding:6px 10px; text-align:center;">票数占比</th>
+                                <th style="padding:6px 10px; text-align:center;">该段平均折扣</th>
+                            </tr>
+                        </thead>
+                        <tbody>${segSummaryRows}</tbody>
+                    </table>
+                    <p style="font-size:12px; color:#9ca3af; margin-top:8px;">
+                        综合折扣率（票数加权）= <strong>${(overallDiscount * 100).toFixed(2)}%</strong>
+                        &nbsp;|&nbsp; 有效票数：${ticketDiscounts.length}票
+                    </p>
+                </div>
+
+                <!-- 三档折扣建议 -->
+                <div class="discount-recommendation suggested" style="margin-bottom:10px;">
+                    <h4 style="color: #16a34a; margin-bottom: 8px;">✅ 持平折扣（与体系一价格相近，误差0-3%）</h4>
                     <p><strong>建议折扣率：</strong><span class="highlight-value">${(flatDiscount * 100).toFixed(2)}%</span></p>
-                    <p><strong>预计总运费：</strong>¥${flatTotal.toFixed(2)} （实际：¥${actualTotalRevenue.toFixed(2)}，差额：¥${flatDiff.toFixed(2)}）</p>
+                    <p style="font-size:13px; color:#374151;">
+                        预计总运费：<strong>¥${flatTotal.toFixed(2)}</strong>
+                        &nbsp;｜ 实际：¥${actualTotalRevenue.toFixed(2)}
+                        &nbsp;｜ 差额：<span style="color:${flatDiff >= 0 ? '#16a34a' : '#dc2626'}">¥${flatDiff.toFixed(2)}（${flatDiffPct >= 0 ? '+' : ''}${flatDiffPct}%）</span>
+                    </p>
                 </div>
 
-                <div class="discount-recommendation warning">
-                    <h4 style="color: #d97706; margin-bottom: 10px;">⚠️ 略低折扣建议（降价优惠）</h4>
-                    <p><strong>建议折扣率：</strong><span class="highlight-value">${(lowerDiscount * 100).toFixed(2)}%</span></p>
-                    <p><strong>预计总运费：</strong>¥${lowerTotal.toFixed(2)} （实际：¥${actualTotalRevenue.toFixed(2)}，差额：¥${lowerDiff.toFixed(2)}，降幅：${(Math.abs(lowerDiff) / actualTotalRevenue * 100).toFixed(2)}%）</p>
+                <div class="discount-recommendation warning" style="margin-bottom:10px;">
+                    <h4 style="color: #d97706; margin-bottom: 8px;">⬇️ 较低折扣（低于整体折扣率约4%，让利客户）</h4>
+                    <p><strong>建议折扣率：</strong><span class="highlight-value">${(lowerDiscount * 100).toFixed(2)}%</span>
+                        <span style="font-size:12px;color:#6b7280;">（整体折扣率 ${(flatDiscount * 100).toFixed(2)}% - 4%）</span>
+                    </p>
+                    <p style="font-size:13px; color:#374151;">
+                        预计总运费：<strong>¥${lowerTotal.toFixed(2)}</strong>
+                        &nbsp;｜ 实际：¥${actualTotalRevenue.toFixed(2)}
+                        &nbsp;｜ 差额：<span style="color:#dc2626;">¥${lowerDiff.toFixed(2)}（${lowerDiffPct}%）</span>
+                    </p>
                 </div>
 
-                <div class="discount-recommendation">
-                    <h4 style="color: #667eea; margin-bottom: 10px;">📈 略高折扣建议（涨价）</h4>
-                    <p><strong>建议折扣率：</strong><span class="highlight-value">${(higherDiscount * 100).toFixed(2)}%</span></p>
-                    <p><strong>预计总运费：</strong>¥${higherTotal.toFixed(2)} （实际：¥${actualTotalRevenue.toFixed(2)}，差额：¥${higherDiff.toFixed(2)}，涨幅：${(higherDiff / actualTotalRevenue * 100).toFixed(2)}%）</p>
+                <div class="discount-recommendation" style="margin-bottom:10px;">
+                    <h4 style="color: #667eea; margin-bottom: 8px;">⬆️ 较高折扣（高于整体折扣率约4%，适当提价）</h4>
+                    <p><strong>建议折扣率：</strong><span class="highlight-value">${(higherDiscount * 100).toFixed(2)}%</span>
+                        <span style="font-size:12px;color:#6b7280;">（整体折扣率 ${(flatDiscount * 100).toFixed(2)}% + 4%）</span>
+                    </p>
+                    <p style="font-size:13px; color:#374151;">
+                        预计总运费：<strong>¥${higherTotal.toFixed(2)}</strong>
+                        &nbsp;｜ 实际：¥${actualTotalRevenue.toFixed(2)}
+                        &nbsp;｜ 差额：<span style="color:#16a34a;">¥${higherDiff.toFixed(2)}（+${higherDiffPct}%）</span>
+                    </p>
                 </div>
 
-                <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <h4 style="margin-bottom: 10px;">💡 折扣建议说明</h4>
-                    <ul style="font-size: 13px; line-height: 1.8; color: #666; padding-left: 20px;">
-                        <li><strong>持平折扣：</strong>基于客户实际发货重量分布计算，保持总运费不变</li>
-                        <li><strong>略低折扣：</strong>给客户更多优惠，有利于维护客户关系</li>
-                        <li><strong>略高折扣：</strong>适当提价，提升利润空间</li>
-                        <li>建议根据客户重要程度、市场竞争情况等因素选择合适的折扣率</li>
+                <div style="margin-top: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; font-size:13px; color:#555; line-height:1.8;">
+                    <h4 style="margin-bottom: 8px; color:#374151;">💡 计算说明</h4>
+                    <ul style="padding-left: 18px;">
+                        <li><strong>综合折扣率</strong>：对每票按"体系一实际价格 ÷ (公开价 × (1+新燃油))"逐票反推折扣，再以票数等权平均</li>
+                        <li><strong>主力货型影响</strong>：票数最多的重量段折扣权重最大，综合折扣率向主力货型靠拢</li>
+                        <li><strong>持平折扣</strong>：综合折扣率，与体系一总运费误差一般在0-3%以内</li>
+                        <li><strong>较低/较高折扣</strong>：在整体折扣率基础上 ±4%（3%-5%范围内）</li>
+                        <li>如需调整，可修改上方"新体系燃油附加费率"后自动重新计算</li>
                     </ul>
                 </div>
             `;
