@@ -1510,7 +1510,12 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // 使用 defval: '' 确保空单元格也被读取（不跳过）
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+                    console.log('Excel 读取完成，总行数:', jsonData.length);
+                    console.log('前10行数据:', jsonData.slice(0, 10));
 
                     // 解析账单数据
                     parseBillData(jsonData);
