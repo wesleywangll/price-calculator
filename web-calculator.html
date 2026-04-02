@@ -1844,9 +1844,9 @@
             // 三档折扣：持平、较低、较高
             // 持平 = 综合折扣率（基于重量段分布加权，误差0-3%范围内）
             const flatDiscount = overallDiscount;
-            // 较低 = 整体折扣率 - 4%（3%~5%之间取4%）
-            const lowerDiscount = Math.max(0.25, flatDiscount - 0.04);
-            // 较高 = 整体折扣率 + 4%（3%~5%之间取4%）
+            // 较低 = 整体折扣率 - 4%（3%~5%之间取4%，让利客户）
+            const lowerDiscount = Math.max(0.01, flatDiscount - 0.04);
+            // 较高 = 整体折扣率 + 4%（3%~5%之间取4%，适当提价）
             const higherDiscount = Math.min(1.0, flatDiscount + 0.04);
 
             // 计算各折扣下的预计总运费（逐票用公开价×折扣×(1+新燃油)）
@@ -1929,7 +1929,7 @@
                     <p style="font-size:13px; color:#374151;">
                         预计总运费：<strong>¥${lowerTotal.toFixed(2)}</strong>
                         &nbsp;｜ 实际：¥${actualTotalRevenue.toFixed(2)}
-                        &nbsp;｜ 差额：<span style="color:#dc2626;">¥${lowerDiff.toFixed(2)}（${lowerDiffPct}%）</span>
+                        &nbsp;｜ 差额：<span style="color:${lowerDiff >= 0 ? '#16a34a' : '#dc2626'};">¥${lowerDiff.toFixed(2)}（${lowerDiff >= 0 ? '+' : ''}${lowerDiffPct}%）</span>
                     </p>
                 </div>
 
@@ -1941,7 +1941,7 @@
                     <p style="font-size:13px; color:#374151;">
                         预计总运费：<strong>¥${higherTotal.toFixed(2)}</strong>
                         &nbsp;｜ 实际：¥${actualTotalRevenue.toFixed(2)}
-                        &nbsp;｜ 差额：<span style="color:#16a34a;">¥${higherDiff.toFixed(2)}（+${higherDiffPct}%）</span>
+                        &nbsp;｜ 差额：<span style="color:${higherDiff >= 0 ? '#16a34a' : '#dc2626'};">¥${higherDiff.toFixed(2)}（${higherDiff >= 0 ? '+' : ''}${higherDiffPct}%）</span>
                     </p>
                 </div>
 
