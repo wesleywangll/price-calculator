@@ -1841,24 +1841,43 @@
                 ? dominantSeg[1].discountSum / dominantSeg[1].count
                 : overallDiscount;
 
-            // 三档折扣：持平、较低、较高
-            // 持平 = 综合折扣率（基于重量段分布加权，误差0-3%范围内）
-            const flatDiscount = overallDiscount;
-            // 较低 = 整体折扣率 - 4%（3%~5%之间取4%，让利客户）
-            const lowerDiscount = Math.max(0.01, flatDiscount - 0.04);
-            // 较高 = 整体折扣率 + 4%（3%~5%之间取4%，适当提价）
-            const higherDiscount = Math.min(1.0, flatDiscount + 0.04);
-
             // 计算各折扣下的预计总运费（逐票用公开价×折扣×(1+新燃油)）
             const actualTotalRevenue = data.reduce((sum, item) => sum + item.price, 0);
 
+            // 新体系基准总运费（折扣=1时），用于反推折扣率
+            // base = sum(公开价 × (1+新燃油))
+            const baseTotal = data.reduce((sum, item) => {
+                const pub = getPublicPrice(item.weight);
+                if (!pub) return sum;
+                return sum + pub * (1 + newFuelRate);
+            }, 0);
+
             function calcTotalWithDiscount(discount) {
-                return data.reduce((sum, item) => {
-                    const pub = getPublicPrice(item.weight);
-                    if (!pub) return sum;
-                    return sum + pub * discount * (1 + newFuelRate);
-                }, 0);
+                return baseTotal * discount;
             }
+
+            // ========================================================
+            // 核心逻辑：目标是控制"新体系总运费 vs 老体系实际总运费"的差距
+            //
+            // 持平折扣：让新体系总运费与老体系误差在 0-3%，取中间值 +1.5%
+            //   目标总运费 = actualTotalRevenue × 1.015
+            //   => discount_flat = 目标总运费 / baseTotal
+            //
+            // 较低折扣：新体系总运费比老体系低 3-5%，取中间值 -4%
+            //   目标总运费 = actualTotalRevenue × 0.96
+            //   => discount_lower = 目标总运费 / baseTotal
+            //
+            // 较高折扣：新体系总运费比老体系高 3-5%，取中间值 +4%
+            //   目标总运费 = actualTotalRevenue × 1.04
+            //   => discount_higher = 目标总运费 / baseTotal
+            // ========================================================
+
+            // 持平：目标费用 = 老体系 × 1.015（误差0-3%，取中间1.5%）
+            const flatDiscount = (actualTotalRevenue * 1.015) / baseTotal;
+            // 较低：目标费用 = 老体系 × 0.96（低3-5%，取中间-4%）
+            const lowerDiscount = (actualTotalRevenue * 0.96) / baseTotal;
+            // 较高：目标费用 = 老体系 × 1.04（高3-5%，取中间+4%）
+            const higherDiscount = (actualTotalRevenue * 1.04) / baseTotal;
 
             const flatTotal = calcTotalWithDiscount(flatDiscount);
             const lowerTotal = calcTotalWithDiscount(lowerDiscount);
@@ -1912,19 +1931,21 @@
 
                 <!-- 三档折扣建议 -->
                 <div class="discount-recommendation suggested" style="margin-bottom:10px;">
-                    <h4 style="color: #16a34a; margin-bottom: 8px;">✅ 持平折扣（与体系一价格相近，误差0-3%）</h4>
-                    <p><strong>建议折扣率：</strong><span class="highlight-value">${(flatDiscount * 100).toFixed(2)}%</span></p>
+                    <h4 style="color: #16a34a; margin-bottom: 8px;">✅ 持平折扣（与体系一总费用误差在 0-3% 以内）</h4>
+                    <p><strong>建议折扣率：</strong><span class="highlight-value">${(flatDiscount * 100).toFixed(2)}%</span>
+                        <span style="font-size:12px;color:#6b7280;">（目标费用 ≈ 老体系 × 101.5%）</span>
+                    </p>
                     <p style="font-size:13px; color:#374151;">
                         预计总运费：<strong>¥${flatTotal.toFixed(2)}</strong>
                         &nbsp;｜ 实际：¥${actualTotalRevenue.toFixed(2)}
-                        &nbsp;｜ 差额：<span style="color:${flatDiff >= 0 ? '#16a34a' : '#dc2626'}">¥${flatDiff.toFixed(2)}（${flatDiffPct >= 0 ? '+' : ''}${flatDiffPct}%）</span>
+                        &nbsp;｜ 差额：<span style="color:${flatDiff >= 0 ? '#16a34a' : '#dc2626'};">¥${flatDiff.toFixed(2)}（${flatDiff >= 0 ? '+' : ''}${flatDiffPct}%）</span>
                     </p>
                 </div>
 
                 <div class="discount-recommendation warning" style="margin-bottom:10px;">
-                    <h4 style="color: #d97706; margin-bottom: 8px;">⬇️ 较低折扣（低于整体折扣率约4%，让利客户）</h4>
+                    <h4 style="color: #d97706; margin-bottom: 8px;">⬇️ 较低折扣（比体系一总费用低 3-5%，让利客户）</h4>
                     <p><strong>建议折扣率：</strong><span class="highlight-value">${(lowerDiscount * 100).toFixed(2)}%</span>
-                        <span style="font-size:12px;color:#6b7280;">（整体折扣率 ${(flatDiscount * 100).toFixed(2)}% - 4%）</span>
+                        <span style="font-size:12px;color:#6b7280;">（目标费用 ≈ 老体系 × 96%）</span>
                     </p>
                     <p style="font-size:13px; color:#374151;">
                         预计总运费：<strong>¥${lowerTotal.toFixed(2)}</strong>
@@ -1934,9 +1955,9 @@
                 </div>
 
                 <div class="discount-recommendation" style="margin-bottom:10px;">
-                    <h4 style="color: #667eea; margin-bottom: 8px;">⬆️ 较高折扣（高于整体折扣率约4%，适当提价）</h4>
+                    <h4 style="color: #667eea; margin-bottom: 8px;">⬆️ 较高折扣（比体系一总费用高 3-5%，适当提价）</h4>
                     <p><strong>建议折扣率：</strong><span class="highlight-value">${(higherDiscount * 100).toFixed(2)}%</span>
-                        <span style="font-size:12px;color:#6b7280;">（整体折扣率 ${(flatDiscount * 100).toFixed(2)}% + 4%）</span>
+                        <span style="font-size:12px;color:#6b7280;">（目标费用 ≈ 老体系 × 104%）</span>
                     </p>
                     <p style="font-size:13px; color:#374151;">
                         预计总运费：<strong>¥${higherTotal.toFixed(2)}</strong>
@@ -1948,10 +1969,14 @@
                 <div style="margin-top: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; font-size:13px; color:#555; line-height:1.8;">
                     <h4 style="margin-bottom: 8px; color:#374151;">💡 计算说明</h4>
                     <ul style="padding-left: 18px;">
-                        <li><strong>综合折扣率</strong>：对每票按"体系一实际价格 ÷ (公开价 × (1+新燃油))"逐票反推折扣，再以票数等权平均</li>
-                        <li><strong>主力货型影响</strong>：票数最多的重量段折扣权重最大，综合折扣率向主力货型靠拢</li>
-                        <li><strong>持平折扣</strong>：综合折扣率，与体系一总运费误差一般在0-3%以内</li>
-                        <li><strong>较低/较高折扣</strong>：在整体折扣率基础上 ±4%（3%-5%范围内）</li>
+                        <li><strong>综合折扣率</strong>：对每票按"体系一实际价格 ÷ (公开价 × (1+新燃油))"逐票反推折扣，再以票数等权平均，反映该客户货物结构下的整体折扣水平</li>
+                        <li><strong>三档折扣的计算方式</strong>：以"新体系预计总运费 vs 老体系实际总运费"的差距为目标，反推所需折扣率：
+                            <ul style="padding-left: 16px; margin-top:4px;">
+                                <li>✅ 持平：目标费用 = 老体系 × 101.5%（误差 0-3%，取中间值）</li>
+                                <li>⬇️ 较低：目标费用 = 老体系 × 96%（低 3-5%，取中间值 -4%）</li>
+                                <li>⬆️ 较高：目标费用 = 老体系 × 104%（高 3-5%，取中间值 +4%）</li>
+                            </ul>
+                        </li>
                         <li>如需调整，可修改上方"新体系燃油附加费率"后自动重新计算</li>
                     </ul>
                 </div>
