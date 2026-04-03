@@ -1508,8 +1508,19 @@
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    console.log('工作簿包含的Sheet数量:', workbook.SheetNames.length);
+                    console.log('所有Sheet名称:', workbook.SheetNames);
+                    
                     const firstSheetName = workbook.SheetNames[0];
+                    console.log('正在读取第一个Sheet:', firstSheetName);
+                    
                     const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // 检查Worksheet的实际范围
+                    if (worksheet['!ref']) {
+                        console.log('Sheet数据范围:', worksheet['!ref']);
+                    }
                     
                     // 使用 defval: '' 确保空单元格也被读取（不跳过）
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
