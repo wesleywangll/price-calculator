@@ -1512,18 +1512,34 @@
                     console.log('工作簿包含的Sheet数量:', workbook.SheetNames.length);
                     console.log('所有Sheet名称:', workbook.SheetNames);
                     
-                    const firstSheetName = workbook.SheetNames[0];
-                    console.log('正在读取第一个Sheet:', firstSheetName);
+                    // 尝试从每个Sheet读取数据，找到包含有效数据的那一个
+                    let jsonData = null;
+                    let selectedSheetName = null;
                     
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    
-                    // 检查Worksheet的实际范围
-                    if (worksheet['!ref']) {
-                        console.log('Sheet数据范围:', worksheet['!ref']);
+                    for (const sheetName of workbook.SheetNames) {
+                        const worksheet = workbook.Sheets[sheetName];
+                        
+                        // 检查Worksheet的实际范围
+                        if (worksheet['!ref']) {
+                            console.log(`Sheet "${sheetName}" 数据范围:`, worksheet['!ref']);
+                        }
+                        
+                        const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                        console.log(`Sheet "${sheetName}" 读取完成，总行数:`, sheetData.length);
+                        
+                        // 如果这个Sheet有超过10行数据，使用它
+                        if (sheetData.length > 10) {
+                            jsonData = sheetData;
+                            selectedSheetName = sheetName;
+                            console.log(`选择Sheet "${sheetName}" 作为数据源（${sheetData.length}行）`);
+                            break;
+                        }
                     }
                     
-                    // 使用 defval: '' 确保空单元格也被读取（不跳过）
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                    if (!jsonData) {
+                        alert('未找到包含有效数据的Sheet（所有Sheet数据行数都少于10行）');
+                        return;
+                    }
 
                     console.log('Excel 读取完成，总行数:', jsonData.length);
                     console.log('前10行数据:', jsonData.slice(0, 10));
