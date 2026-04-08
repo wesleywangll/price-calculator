@@ -1055,7 +1055,7 @@
                     smallRows += '<tr style="background:' + bg + '"><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">' + item.weight + 'kg</td><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">¥' + item.publicPrice + '</td><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">¥' + p1.toFixed(2) + '</td><td style="padding:8px;text-align:center;font-size:10px;font-weight:600;color:#1a237e;border-bottom:1px solid #eee;">¥' + p2.toFixed(2) + '</td></tr>';
                 });
 
-                // 大货数据
+                // 大货数据（重量段、基础价、燃油附加费、含油价格）
                 let largeRows = '';
                 const segments = ['21-30', '31-50', '51-100', '101-300', '301+'];
                 segments.forEach((seg, i) => {
@@ -1064,7 +1064,7 @@
                     const fuelP = baseP * newFuelRate;
                     const totalP = baseP + fuelP;
                     const bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
-                    largeRows += '<tr style="background:' + bg + '"><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">' + seg + 'kg</td><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">¥' + oldP.toFixed(2) + '/kg</td><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">¥' + baseP.toFixed(2) + '/kg</td><td style="padding:8px;text-align:center;font-size:10px;color:#e65100;border-bottom:1px solid #eee;">+¥' + fuelP.toFixed(2) + '/kg</td><td style="padding:8px;text-align:center;font-size:10px;font-weight:600;color:#1a237e;border-bottom:1px solid #eee;">¥' + totalP.toFixed(2) + '/kg</td></tr>';
+                    largeRows += '<tr style="background:' + bg + '"><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">' + seg + 'kg</td><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">¥' + baseP.toFixed(2) + '/kg</td><td style="padding:8px;text-align:center;font-size:10px;color:#e65100;border-bottom:1px solid #eee;">+¥' + fuelP.toFixed(2) + '/kg</td><td style="padding:8px;text-align:center;font-size:10px;font-weight:600;color:#1a237e;border-bottom:1px solid #eee;">¥' + totalP.toFixed(2) + '/kg</td></tr>';
                 });
 
                 const tempDiv = document.createElement('div');
@@ -1094,15 +1094,14 @@
                     '<div style="margin:16px 0 10px;"><span style="background:#e65100;color:#fff;padding:3px 10px;border-radius:3px;font-size:9px;font-weight:600;">大件报价 (21kg+)</span></div>' +
                     '<table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-radius:4px;overflow:hidden;table-layout:fixed;">' +
                     '<thead><tr style="background:#fff3e0;">' +
-                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:18%;">重量段</th>' +
-                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:20%;">老单价</th>' +
-                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:20%;">基础价</th>' +
-                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:20%;">燃油费</th>' +
-                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:22%;">新单价</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:25%;">重量段</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:25%;">基础价</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:25%;">燃油附加费</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:25%;">含油价格</th>' +
                     '</tr></thead><tbody>' + largeRows + '</tbody></table>' +
                     '<div style="margin-top:18px;padding:10px 14px;background:#fafafa;border-radius:4px;border:1px solid #e0e0e0;">' +
                     '<p style="margin:0 0 6px;font-size:9px;color:#37474f;font-weight:600;">备注说明</p>' +
-                    '<p style="margin:2px 0;font-size:8px;color:#78909c;">1. 价格单位为人民币(CNY) 2. 燃油附加费随市场浮动 3. 小件:公开价×折扣×(1+燃油) 大件:老单价÷(1+燃油) 4. 报价30日内有效</p>' +
+                    '<p style="margin:2px 0;font-size:8px;color:#78909c;">1. 价格单位为人民币(CNY) 2. 燃油附加费随市场浮动 3. 小件:公开价×折扣×(1+燃油) 大件:老单价÷(1+燃油) 4. 如有疑问，请联系您的专属销售顾问</p>' +
                     '</div>' +
                     '<div style="margin-top:16px;padding-top:10px;border-top:1px solid #e0e0e0;text-align:center;">' +
                     '<p style="margin:0;font-size:10px;color:#1a1a2e;font-weight:600;">' + companyName + '</p>' +
