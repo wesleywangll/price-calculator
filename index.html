@@ -465,6 +465,39 @@
                         计算折扣与价差
                     </button>
 
+                    <!-- 大货报价输入 -->
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed #ddd;">
+                        <h3 style="font-size: 14px; color: #333; margin-bottom: 15px;">📦 大货报价 (20kg+)</h3>
+                        <p style="color: #666; font-size: 11px; margin-bottom: 10px;">手动输入各重量段老体系单价(¥/kg)，自动拆分新体系基础价+燃油</p>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+                            <div class="form-group">
+                                <label>21-30kg</label>
+                                <input type="number" id="oldPrice21_30" placeholder="21" value="21" step="0.1" onchange="calculate()">
+                            </div>
+
+                            <div class="form-group">
+                                <label>31-50kg</label>
+                                <input type="number" id="oldPrice31_50" placeholder="20" value="20" step="0.1" onchange="calculate()">
+                            </div>
+
+                            <div class="form-group">
+                                <label>51-100kg</label>
+                                <input type="number" id="oldPrice51_100" placeholder="19" value="19" step="0.1" onchange="calculate()">
+                            </div>
+
+                            <div class="form-group">
+                                <label>101-300kg</label>
+                                <input type="number" id="oldPrice101_300" placeholder="18" value="18" step="0.1" onchange="calculate()">
+                            </div>
+
+                            <div class="form-group">
+                                <label>301kg+</label>
+                                <input type="number" id="oldPrice301plus" placeholder="18" value="18" step="0.1" onchange="calculate()">
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 错误信息显示区域 -->
                     <div id="errorBox" style="display: none; margin-top: 15px; padding: 10px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; font-size: 12px; color: #dc2626;">
                         <strong>❌ 错误信息：</strong>
@@ -516,7 +549,7 @@
                 <div class="result-card">
                     <h2>
                         📊 价格对比表
-                        <small style="font-size: 12px; color: #666; font-weight: normal;">共40个重量段</small>
+                        <small style="font-size: 12px; color: #666; font-weight: normal;">小货(0.5-20kg) + 大货(21kg+)</small>
                         <span id="modeIndicator" class="mode-indicator mode-indicator-reverse">反推折扣模式</span>
                     </h2>
                     <div class="table-container">
@@ -568,6 +601,16 @@
                         <div class="analysis-item">
                             <h3>🎯 过渡建议</h3>
                             <p id="transitionAdvice">--</p>
+                        </div>
+
+                        <!-- 大货价差分析 -->
+                        <div class="analysis-item">
+                            <h3>📦 大货价差分析 (20kg+)</h3>
+                            <p><strong>新体系燃油费率：</strong><span id="largeNewFuelRate" class="highlight-value">25%</span></p>
+                            <p><strong>涨价段：</strong><span id="largeUpCount">0</span> 个 <span class="badge badge-warning">⚠️</span></p>
+                            <p><strong>降价段：</strong><span id="largeDownCount">0</span> 个 <span class="badge badge-success">✓</span></p>
+                            <p><strong>持平段：</strong><span id="largeSameCount">0</span> 个 <span class="badge badge-success">✓</span></p>
+                            <p><strong>大货建议：</strong><span id="largeTransitionAdvice">--</span></p>
                         </div>
                     </div>
                 </div>
@@ -751,7 +794,7 @@
 
             currentResults = results;
 
-            // 渲染表格
+            // 渲染小货表格
             results.forEach(item => {
                 const row = document.createElement('tr');
 
@@ -868,6 +911,9 @@
                     adviceEl.innerHTML = '✅ <strong>总体持平</strong><br>价格体系过渡对客户影响最小';
                 }
             }
+
+            // 获取大货输入并计算
+            calculateLarge();
         }
 
         function exportToExcel() {
@@ -976,189 +1022,243 @@
 
         function exportToPDF() {
             try {
-                hideError(); // 清除之前的错误信息
-
+                hideError();
                 if (currentResults.length === 0) {
                     alert('请先点击"计算折扣与价差"按钮进行计算');
                     return;
                 }
-
-                // 检查库是否加载
-                if (typeof window.jspdf === 'undefined') {
-                    const msg = 'PDF库未加载\n\n请检查：\n1. 网络连接是否正常\n2. jsPDF CDN是否可访问\n3. 刷新页面重试';
-                    showError(msg);
-                    alert(msg);
+                if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+                    alert('PDF库未加载，请检查网络连接并刷新页面重试');
                     return;
                 }
 
-                if (typeof html2canvas === 'undefined') {
-                    const msg = 'html2canvas库未加载\n\n请检查网络连接并刷新页面重试';
-                    showError(msg);
-                    alert(msg);
-                    return;
-                }
-
-                console.log('开始生成PDF...');
-
-                // 获取参数
                 const productName = document.getElementById('productName').value || '商业件标准';
                 const customerDiscount = parseFloat(document.getElementById('customerDiscount').value) / 100;
                 const newFuelRate = parseFloat(document.getElementById('newFuelRate').value) / 100;
                 const companyName = document.getElementById('companyName').value || 'YDH 义达跨境';
                 const effectiveDate = document.getElementById('effectiveDate').value || new Date().toISOString().slice(0, 10);
 
-                console.log('参数:', { productName, customerDiscount, newFuelRate, companyName, effectiveDate });
+                const largeCargoPrices = {
+                    '21-30': parseFloat(document.getElementById('oldPrice21_30').value) || 0,
+                    '31-50': parseFloat(document.getElementById('oldPrice31_50').value) || 0,
+                    '51-100': parseFloat(document.getElementById('oldPrice51_100').value) || 0,
+                    '101-300': parseFloat(document.getElementById('oldPrice101_300').value) || 0,
+                    '301+': parseFloat(document.getElementById('oldPrice301plus').value) || 0
+                };
 
-                // 创建一个临时的HTML元素来渲染PDF内容
-                const tempDiv = document.createElement('div');
-                tempDiv.style.position = 'fixed';
-                tempDiv.style.left = '-9999px';
-                tempDiv.style.top = '0';
-                tempDiv.style.width = '210mm'; // A4宽度
-                tempDiv.style.padding = '20mm';
-                tempDiv.style.backgroundColor = 'white';
-                tempDiv.style.fontSize = '12px';
-                tempDiv.style.fontFamily = 'Arial, "Microsoft YaHei", sans-serif';
-
-                // 构建PDF内容的HTML
-                let htmlContent = `
-                    <div style="margin-bottom: 20px;">
-                        <h1 style="text-align: center; color: #333; font-size: 24px; margin-bottom: 10px;">折扣价报价单</h1>
-                        <div style="margin-bottom: 10px;"><strong>公司名称:</strong> ${companyName}</div>
-                        <div style="margin-bottom: 10px;"><strong>产品名称:</strong> ${productName}</div>
-                        <div style="margin-bottom: 10px;"><strong>价格生效日期:</strong> ${effectiveDate}</div>
-                        <div style="margin-bottom: 10px;"><strong>折扣率:</strong> ${(customerDiscount * 100).toFixed(1)}%</div>
-                        <div style="margin-bottom: 20px;"><strong>燃油附加费率:</strong> ${(newFuelRate * 100).toFixed(1)}%</div>
-                    </div>
-
-                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                        <thead>
-                            <tr style="background: #667eea; color: white;">
-                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center;">重量</th>
-                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center;">公开价</th>
-                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center;">折扣后未含燃油价格</th>
-                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center;">折扣后含燃油价格</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                // 添加表格数据
-                currentResults.forEach(item => {
-                    const discountPrice = item.publicPrice * customerDiscount;
-                    const fuelPrice = item.publicPrice * customerDiscount * (1 + newFuelRate);
-                    const bgColor = currentResults.indexOf(item) % 2 === 0 ? '#ffffff' : '#f5f5f5';
-
-                    htmlContent += `
-                        <tr style="background: ${bgColor};">
-                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${item.weight} kg</td>
-                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">¥${item.publicPrice}</td>
-                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">¥${discountPrice.toFixed(2)}</td>
-                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">¥${fuelPrice.toFixed(2)}</td>
-                        </tr>
-                    `;
+                // 小货数据
+                let smallRows = '';
+                currentResults.forEach((item, i) => {
+                    const p1 = item.publicPrice * customerDiscount;
+                    const p2 = p1 * (1 + newFuelRate);
+                    const bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
+                    smallRows += '<tr style="background:' + bg + '"><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">' + item.weight + 'kg</td><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">¥' + item.publicPrice + '</td><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">¥' + p1.toFixed(2) + '</td><td style="padding:8px;text-align:center;font-size:10px;font-weight:600;color:#1a237e;border-bottom:1px solid #eee;">¥' + p2.toFixed(2) + '</td></tr>';
                 });
 
-                htmlContent += `
-                        </tbody>
-                    </table>
+                // 大货数据
+                let largeRows = '';
+                const segments = ['21-30', '31-50', '51-100', '101-300', '301+'];
+                segments.forEach((seg, i) => {
+                    const oldP = largeCargoPrices[seg];
+                    const baseP = oldP / (1 + newFuelRate);
+                    const fuelP = baseP * newFuelRate;
+                    const totalP = baseP + fuelP;
+                    const bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
+                    largeRows += '<tr style="background:' + bg + '"><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">' + seg + 'kg</td><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">¥' + oldP.toFixed(2) + '/kg</td><td style="padding:8px;text-align:center;font-size:10px;border-bottom:1px solid #eee;">¥' + baseP.toFixed(2) + '/kg</td><td style="padding:8px;text-align:center;font-size:10px;color:#e65100;border-bottom:1px solid #eee;">+¥' + fuelP.toFixed(2) + '/kg</td><td style="padding:8px;text-align:center;font-size:10px;font-weight:600;color:#1a237e;border-bottom:1px solid #eee;">¥' + totalP.toFixed(2) + '/kg</td></tr>';
+                });
 
-                    <div style="margin-top: 20px; font-size: 9px; color: #666;">
-                        <p><strong>说明:</strong></p>
-                        <p style="margin: 5px 0;">1. 以上价格以人民币(CNY)为单位</p>
-                        <p style="margin: 5px 0;">2. 燃油附加费率会根据官网每月浮动，具体以官网公布为准</p>
-                        <p style="margin: 5px 0;">3. 折扣后含燃油价格 = 公开价 × 折扣率 × (1 + 燃油附加费率)</p>
-                        <p style="margin: 5px 0;">4. 本报价单有效期为价格生效日期起30天内</p>
-                        <p style="margin: 5px 0;">5. 具体业务规则请参考正式合同条款</p>
-                    </div>
+                const tempDiv = document.createElement('div');
+                tempDiv.style.cssText = 'position:fixed;left:-9999px;top:0;width:190mm;padding:10mm;background:#fff;font-family:PingFang SC,Microsoft YaHei,Arial,sans-serif;color:#1a1a2e;';
 
-                    <div style="margin-top: 20px; text-align: center; font-size: 9px; color: #999;">
-                        YDH 义达跨境 | https://www.ydhex.com
-                    </div>
-                `;
+                tempDiv.innerHTML = '<div style="width:100%;max-width:170mm;margin:0 auto;overflow-x:hidden;">' +
+                    '<div style="background:linear-gradient(135deg,#1a1a2e,#283593);color:#fff;padding:18px 20px;border-radius:8px 8px 0 0;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                    '<div><h1 style="margin:0;font-size:18px;font-weight:600;letter-spacing:2px;">PRICE QUOTATION</h1><p style="margin:4px 0 0;font-size:10px;opacity:0.85;">价 格 报 价 单</p></div>' +
+                    '<div style="text-align:right;font-size:9px;opacity:0.9;"><p style="margin:0;">' + companyName + '</p><p style="margin:2px 0 0;">' + effectiveDate + '</p></div>' +
+                    '</div></div>' +
+                    '<div style="background:#eceff1;padding:12px 20px;border-left:4px solid #1a237e;margin-bottom:14px;">' +
+                    '<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:11px;">' +
+                    '<div><span style="color:#546e7a;font-size:8px;">产品名称</span><br><span style="font-weight:600;">' + productName + '</span></div>' +
+                    '<div><span style="color:#546e7a;font-size:8px;">客户折扣</span><br><span style="font-weight:600;color:#d50000;">' + (customerDiscount * 100).toFixed(1) + '%</span></div>' +
+                    '<div><span style="color:#546e7a;font-size:8px;">燃油附加费</span><br><span style="font-weight:600;color:#1a237e;">+' + (newFuelRate * 100).toFixed(1) + '%</span></div>' +
+                    '<div><span style="color:#546e7a;font-size:8px;">生效日期</span><br><span style="font-weight:600;">' + effectiveDate + '</span></div>' +
+                    '</div></div>' +
+                    '<div style="margin-bottom:10px;"><span style="background:#1a237e;color:#fff;padding:3px 10px;border-radius:3px;font-size:9px;font-weight:600;">小件报价 (0.5-20kg)</span></div>' +
+                    '<table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-radius:4px;overflow:hidden;table-layout:fixed;">' +
+                    '<thead><tr style="background:#f5f5f5;">' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#546e7a;border-bottom:2px solid #bdbdbd;width:15%;">重量</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#546e7a;border-bottom:2px solid #bdbdbd;width:20%;">公开价</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#546e7a;border-bottom:2px solid #bdbdbd;width:30%;">折后价(不含油)</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#546e7a;border-bottom:2px solid #bdbdbd;width:35%;">最终报价(含油)</th>' +
+                    '</tr></thead><tbody>' + smallRows + '</tbody></table>' +
+                    '<div style="margin:16px 0 10px;"><span style="background:#e65100;color:#fff;padding:3px 10px;border-radius:3px;font-size:9px;font-weight:600;">大件报价 (21kg+)</span></div>' +
+                    '<table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-radius:4px;overflow:hidden;table-layout:fixed;">' +
+                    '<thead><tr style="background:#fff3e0;">' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:18%;">重量段</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:20%;">老单价</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:20%;">基础价</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:20%;">燃油费</th>' +
+                    '<th style="padding:8px 4px;text-align:center;font-size:9px;color:#e65100;border-bottom:2px solid #ffccbc;width:22%;">新单价</th>' +
+                    '</tr></thead><tbody>' + largeRows + '</tbody></table>' +
+                    '<div style="margin-top:18px;padding:10px 14px;background:#fafafa;border-radius:4px;border:1px solid #e0e0e0;">' +
+                    '<p style="margin:0 0 6px;font-size:9px;color:#37474f;font-weight:600;">备注说明</p>' +
+                    '<p style="margin:2px 0;font-size:8px;color:#78909c;">1. 价格单位为人民币(CNY) 2. 燃油附加费随市场浮动 3. 小件:公开价×折扣×(1+燃油) 大件:老单价÷(1+燃油) 4. 报价30日内有效</p>' +
+                    '</div>' +
+                    '<div style="margin-top:16px;padding-top:10px;border-top:1px solid #e0e0e0;text-align:center;">' +
+                    '<p style="margin:0;font-size:10px;color:#1a1a2e;font-weight:600;">' + companyName + '</p>' +
+                    '<p style="margin:2px 0 0;font-size:8px;color:#78909c;">www.ydhex.com</p>' +
+                    '</div></div>';
 
-                tempDiv.innerHTML = htmlContent;
                 document.body.appendChild(tempDiv);
 
-                console.log('HTML内容已创建');
-
-                // 使用html2canvas将HTML渲染为canvas
-                html2canvas(tempDiv, {
-                    scale: 2, // 提高清晰度
-                    useCORS: true,
-                    logging: true,
-                    backgroundColor: '#ffffff'
+                html2canvas(tempDiv, { 
+                    scale: 2, 
+                    useCORS: true, 
+                    backgroundColor: '#ffffff',
+                    width: tempDiv.offsetWidth,
+                    height: tempDiv.offsetHeight
                 }).then(canvas => {
-                    console.log('Canvas生成成功，尺寸:', canvas.width, 'x', canvas.height);
-
-                    // 获取canvas的图片数据
-                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
-                    // 移除临时元素
                     document.body.removeChild(tempDiv);
-
-                    // 创建PDF
                     const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF({
-                        orientation: 'portrait',
-                        unit: 'mm',
-                        format: 'a4'
-                    });
-
+                    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                     const pdfWidth = doc.internal.pageSize.getWidth();
                     const pdfHeight = doc.internal.pageSize.getHeight();
-
-                    // 计算图片在PDF中的尺寸
-                    const imgWidth = pdfWidth - 40; // 左右各20mm边距
+                    const imgWidth = pdfWidth - 30;
                     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-                    // 如果内容超过一页，分页处理
-                    if (imgHeight > pdfHeight - 40) {
-                        // 这里简单处理：如果内容太长，压缩到一页
-                        const scaleFactor = (pdfHeight - 40) / imgHeight;
-                        const finalWidth = imgWidth * scaleFactor;
-                        const finalHeight = pdfHeight - 40;
-                        doc.addImage(imgData, 'JPEG', 20, 20, finalWidth, finalHeight);
+                    if (imgHeight > pdfHeight - 30) {
+                        const sf = (pdfHeight - 30) / imgHeight;
+                        doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 15, 15, imgWidth * sf, pdfHeight - 30);
                     } else {
-                        doc.addImage(imgData, 'JPEG', 20, 20, imgWidth, imgHeight);
+                        doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 15, 15, imgWidth, imgHeight);
                     }
 
-                    console.log('准备保存PDF...');
-
-                    // 保存PDF
-                    const fileName = `${productName}_折扣价报价单_${effectiveDate}.pdf`;
-                    doc.save(fileName);
-
-                    console.log('PDF保存成功:', fileName);
-
+                    doc.save(productName + '_报价单_' + effectiveDate + '.pdf');
                 }).catch(error => {
-                    // 移除临时元素
-                    if (tempDiv.parentNode) {
-                        document.body.removeChild(tempDiv);
-                    }
-
-                    const errorMsg = '渲染PDF时发生错误:\n\n' +
-                        '错误名称: ' + error.name + '\n' +
-                        '错误信息: ' + error.message + '\n' +
-                        '错误堆栈: ' + error.stack;
-                    showError(errorMsg);
-                    alert('导出PDF时发生错误: ' + error.message + '\n\n详细错误信息已显示在页面上');
+                    if (tempDiv.parentNode) document.body.removeChild(tempDiv);
+                    showError('PDF生成失败: ' + error.message);
+                    alert('导出失败: ' + error.message);
                 });
-
             } catch (error) {
-                const errorMsg = '导出PDF时发生错误:\n\n' +
-                    '错误名称: ' + error.name + '\n' +
-                    '错误信息: ' + error.message + '\n' +
-                    '错误堆栈: ' + error.stack;
-                showError(errorMsg);
-                alert('导出PDF时发生错误: ' + error.message + '\n\n详细错误信息已显示在页面上');
+                showError('PDF导出异常: ' + error.message);
+                alert('导出异常: ' + error.message);
             }
         }
+
 
         // 页面加载时自动计算
         window.onload = function() {
             calculate();
         };
+
+        // 大货价格计算 (20kg+)，追加到主表格
+        function calculateLarge() {
+            const newFuelRate = parseFloat(document.getElementById('newFuelRate').value) / 100;
+            const mode = document.getElementById('calcMode').value;
+
+            // 获取老体系单价（已含燃油）
+            const oldPrices = {
+                '21-30': parseFloat(document.getElementById('oldPrice21_30').value) || 0,
+                '31-50': parseFloat(document.getElementById('oldPrice31_50').value) || 0,
+                '51-100': parseFloat(document.getElementById('oldPrice51_100').value) || 0,
+                '101-300': parseFloat(document.getElementById('oldPrice101_300').value) || 0,
+                '301+': parseFloat(document.getElementById('oldPrice301plus').value) || 0
+            };
+
+            const tbody = document.getElementById('priceTableBody');
+
+            const segments = ['21-30', '31-50', '51-100', '101-300', '301+'];
+            const diffCount = { up: 0, down: 0, same: 0 };
+
+            // 添加大货表头行
+            const headerRow = document.createElement('tr');
+            headerRow.style.backgroundColor = '#d4edda';
+            headerRow.style.fontWeight = 'bold';
+            headerRow.innerHTML = `
+                <tr style="background-color:#d4edda;font-weight:bold;">
+                    <th>重量段</th>
+                    <th>老体系单价<br><small>(含燃油)</small></th>
+                    <th>新体系基础价<br><small>(不含燃油)</small></th>
+                    <th>燃油<br><small>(${newFuelRate*100}%)</small></th>
+                    <th>新体系单价<br><small>(含燃油)</small></th>
+                    <th>价差</th>
+                    <th>波动</th>
+                    <th>变化</th>
+                </tr>
+            `;
+            tbody.appendChild(headerRow);
+
+            segments.forEach(seg => {
+                const oldUnitPrice = oldPrices[seg];
+
+                // 老体系单价（含燃油）直接使用输入值
+                const oldTotal = oldUnitPrice;
+
+                // 新体系拆分：基础价 = 老单价 ÷ (1 + 燃油)
+                const newBasePrice = oldTotal / (1 + newFuelRate);
+                const newFuelAmount = newBasePrice * newFuelRate;
+                const newUnitTotal = newBasePrice + newFuelAmount;
+
+                // 价差（新单价 - 老单价，应该接近0）
+                const diff = newUnitTotal - oldTotal;
+                const fluctuation = oldTotal > 0 ? ((diff / oldTotal) * 100).toFixed(2) : 0;
+
+                // 统计
+                if (diff > 0.01) diffCount.up++;
+                else if (diff < -0.01) diffCount.down++;
+                else diffCount.same++;
+
+                // 渲染行
+                const row = document.createElement('tr');
+                row.style.backgroundColor = '#f8f9fa';
+
+                let diffClass, diffText, changeText;
+                if (diff > 0.01) {
+                    diffClass = 'price-up';
+                    diffText = '+' + diff.toFixed(2);
+                    changeText = '↑ 涨价';
+                } else if (diff < -0.01) {
+                    diffClass = 'price-down';
+                    diffText = diff.toFixed(2);
+                    changeText = '↓ 降价';
+                } else {
+                    diffClass = 'price-same';
+                    diffText = '0.00';
+                    changeText = '→ 持平';
+                }
+
+                // 大货行（统一8列格式）
+                row.innerHTML = `
+                    <td><strong>${seg}kg</strong></td>
+                    <td>¥${oldUnitPrice.toFixed(2)}/kg</td>
+                    <td>¥${newBasePrice.toFixed(2)}/kg</td>
+                    <td>+¥${newFuelAmount.toFixed(2)}/kg</td>
+                    <td>¥${newUnitTotal.toFixed(2)}/kg</td>
+                    <td><span class="${diffClass}">${diffText}</span></td>
+                    <td>${fluctuation}%</td>
+                    <td><span class="${diffClass}">${changeText}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // 更新分析结果
+            document.getElementById('largeNewFuelRate').textContent = (newFuelRate * 100).toFixed(0) + '%';
+            document.getElementById('largeUpCount').textContent = diffCount.up;
+            document.getElementById('largeDownCount').textContent = diffCount.down;
+            document.getElementById('largeSameCount').textContent = diffCount.same;
+
+            // 过渡建议
+            const adviceEl = document.getElementById('largeTransitionAdvice');
+            if (diffCount.up === 0 && diffCount.down === 0) {
+                adviceEl.innerHTML = '✅ <strong>价格持平</strong>，大货过渡无影响';
+            } else if (diffCount.up > 0 && diffCount.down === 0) {
+                adviceEl.innerHTML = '⚠️ <strong>全部涨价</strong>，需与客户沟通确认';
+            } else if (diffCount.down > 0 && diffCount.up === 0) {
+                adviceEl.innerHTML = '✅ <strong>全部降价</strong>，客户可获优惠';
+            } else {
+                adviceEl.innerHTML = '⚠️ <strong>有涨有降</strong>，需根据具体重量段报价';
+            }
+        }
     </script>
 </body>
 </html>
