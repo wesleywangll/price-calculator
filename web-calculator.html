@@ -617,6 +617,15 @@
                         <small>报价单价格生效日期</small>
                     </div>
 
+                    <div class="form-group" id="volumeFactorGroup" style="display: none;">
+                        <label>计抛系数</label>
+                        <select id="volumeFactor" class="form-select" onchange="calculate()" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                            <option value="5000" selected>5000</option>
+                            <option value="6000">6000</option>
+                        </select>
+                        <small>体积计算公式中的除数：长×宽×高÷{计抛系数}</small>
+                    </div>
+
                     <button class="btn" onclick="calculate()">
                         <span>📊</span>
                         计算折扣与价差
@@ -853,6 +862,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- SheetJS 用于解析Excel文件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- TDesign Web Components 库 -->
+    <link rel="stylesheet" href="https://unpkg.com/tdesign-web-components/dist/tdesign.min.css" />
+    <script src="https://unpkg.com/tdesign-web-components/dist/tdesign-web-components.iife.js"></script>
 
     <script>
         // 选项卡切换
@@ -1310,8 +1323,9 @@
                 const newFuelRate = parseFloat(document.getElementById('newFuelRate').value) / 100;
                 const companyName = document.getElementById('companyName').value || 'YDH 义达跨境';
                 const effectiveDate = document.getElementById('effectiveDate').value || new Date().toISOString().slice(0, 10);
+                const volumeFactor = document.getElementById('volumeFactor').value || '5000';
 
-                console.log('参数:', { productName, customerDiscount, newFuelRate, companyName, effectiveDate });
+                console.log('参数:', { productName, customerDiscount, newFuelRate, companyName, effectiveDate, volumeFactor });
 
                 // 创建一个临时的HTML元素来渲染PDF内容
                 const tempDiv = document.createElement('div');
@@ -1326,127 +1340,207 @@
 
                 // 构建PDF内容的HTML
                 let htmlContent = `
-                    <div style="margin-bottom: 20px;">
-                        <h1 style="text-align: center; color: #333; font-size: 24px; margin-bottom: 10px;">折扣价报价单</h1>
-                        <div style="margin-bottom: 10px;"><strong>公司名称:</strong> ${companyName}</div>
-                        <div style="margin-bottom: 10px;"><strong>产品名称:</strong> ${productName}</div>
-                        <div style="margin-bottom: 10px;"><strong>价格生效日期:</strong> ${effectiveDate}</div>
-                        <div style="margin-bottom: 10px;"><strong>折扣率:</strong> ${(customerDiscount * 100).toFixed(1)}%</div>
-                        <div style="margin-bottom: 20px;"><strong>燃油附加费率:</strong> ${(newFuelRate * 100).toFixed(1)}%</div>
+                    <div style="margin-bottom: 15px;">
+                        <!-- Logo区域 -->
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <img src="https://qdydh-3g99ow1v059db9c0-1418534375.tcloudbaseapp.com/ydh-logo-header.png" 
+                                 style="max-width: 100%; height: auto; max-height: 60px;" 
+                                 alt="义达跨境">
+                        </div>
+                        <h1 style="text-align: center; color: #333; font-size: 24px; margin-bottom: 12px; font-weight: bold;">义达跨境日本商业件产品价目表</h1>
+                        <div style="margin-bottom: 5px; font-size: 12px;"><strong>公司名称:</strong> ${companyName}</div>
+                        <div style="margin-bottom: 5px; font-size: 12px;"><strong>产品名称:</strong> ${productName}</div>
+                        <div style="margin-bottom: 5px; font-size: 12px;"><strong>价格生效日期:</strong> ${effectiveDate}</div>
+                        <div style="margin-bottom: 5px; font-size: 13px;"><strong style="color: #dc2626; font-weight: bold;">折扣率:</strong> <span style="color: #dc2626; font-weight: bold; font-size: 14px;">${(customerDiscount * 100).toFixed(1)}%</span></div>
+                        <div style="margin-bottom: 10px; font-size: 13px;"><strong style="color: #dc2626; font-weight: bold;">燃油附加费率:</strong> <span style="color: #dc2626; font-weight: bold; font-size: 14px;">${(newFuelRate * 100).toFixed(1)}%</span></div>
                     </div>
 
-                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; page-break-inside: avoid;">
                         <thead>
                             <tr style="background: #667eea; color: white;">
-                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center;">重量</th>
-                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center;">公开价</th>
-                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center;">折扣后未含燃油价格</th>
-                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center;">折扣后含燃油价格</th>
+                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center; font-size: 12px;">重量/kg</th>
+                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center; font-size: 12px;">公开价</th>
+                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center; font-size: 12px;">折扣后价格</th>
+                                <th style="border: 1px solid #667eea; padding: 8px; text-align: center; font-size: 12px;">含燃油价格</th>
                             </tr>
                         </thead>
                         <tbody>
                 `;
 
-                // 添加表格数据
-                currentResults.forEach(item => {
+                // 第一页数据：到10kg为止
+                const firstPageData = currentResults.filter(item => parseFloat(item.weight) <= 10);
+                // 第二页数据：从11kg开始
+                const secondPageData = currentResults.filter(item => parseFloat(item.weight) >= 11);
+
+                // 构建第一页内容（带表头和到10kg的数据）
+                let firstPageHtml = `
+                    <div style="margin-bottom: 0;">
+                        <!-- Logo区域 -->
+                        <div style="text-align: center; margin-bottom: 12px;">
+                            <img src="https://qdydh-3g99ow1v059db9c0-1418534375.tcloudbaseapp.com/ydh-logo-header.png" 
+                                 style="max-width: 100%; height: auto; max-height: 50px;" 
+                                 alt="义达跨境">
+                        </div>
+                        <h1 style="text-align: center; color: #333; font-size: 20px; margin-bottom: 10px; font-weight: bold;">义达跨境日本商业件产品价目表</h1>
+                        <div style="margin-bottom: 4px; font-size: 11px;"><strong>公司名称:</strong> ${companyName}</div>
+                        <div style="margin-bottom: 4px; font-size: 11px;"><strong>产品名称:</strong> ${productName}</div>
+                        <div style="margin-bottom: 4px; font-size: 11px;"><strong>价格生效日期:</strong> ${effectiveDate}</div>
+                        <div style="margin-bottom: 4px; font-size: 12px;"><strong style="color: #dc2626;">折扣率:</strong> <span style="color: #dc2626; font-weight: bold;">${(customerDiscount * 100).toFixed(1)}%</span></div>
+                        <div style="margin-bottom: 8px; font-size: 12px;"><strong style="color: #dc2626;">燃油附加费率:</strong> <span style="color: #dc2626; font-weight: bold;">${(newFuelRate * 100).toFixed(1)}%</span></div>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #667eea; color: white;">
+                                <th style="border: 1px solid #667eea; padding: 6px; text-align: center;">重量/kg</th>
+                                <th style="border: 1px solid #667eea; padding: 6px; text-align: center;">公开价</th>
+                                <th style="border: 1px solid #667eea; padding: 6px; text-align: center;">折扣后价格</th>
+                                <th style="border: 1px solid #667eea; padding: 6px; text-align: center;">含燃油价格</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                firstPageData.forEach((item, idx) => {
                     const discountPrice = item.publicPrice * customerDiscount;
                     const fuelPrice = item.publicPrice * customerDiscount * (1 + newFuelRate);
-                    const bgColor = currentResults.indexOf(item) % 2 === 0 ? '#ffffff' : '#f5f5f5';
-
-                    htmlContent += `
+                    const bgColor = idx % 2 === 0 ? '#ffffff' : '#f5f5f5';
+                    firstPageHtml += `
                         <tr style="background: ${bgColor};">
-                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${item.weight} kg</td>
-                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">¥${item.publicPrice}</td>
-                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">¥${discountPrice.toFixed(2)}</td>
-                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">¥${fuelPrice.toFixed(2)}</td>
+                            <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">${item.weight}</td>
+                            <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">¥${item.publicPrice}</td>
+                            <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">¥${discountPrice.toFixed(2)}</td>
+                            <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">¥${fuelPrice.toFixed(2)}</td>
                         </tr>
                     `;
                 });
 
-                htmlContent += `
+                firstPageHtml += `
+                        </tbody>
+                    </table>
+                `;
+
+                // 构建第二页内容（表头 + 从11kg开始的数据 + 备注）
+                let secondPageHtml = `
+                    <div style="margin-bottom: 10px;">
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <img src="https://qdydh-3g99ow1v059db9c0-1418534375.tcloudbaseapp.com/ydh-logo-header.png" 
+                                 style="max-width: 100%; height: auto; max-height: 40px;" 
+                                 alt="义达跨境">
+                        </div>
+                        <h2 style="text-align: center; color: #333; font-size: 16px; margin-bottom: 8px; font-weight: bold;">义达跨境日本商业件产品价目表（续）</h2>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px;">
+                        <thead>
+                            <tr style="background: #667eea; color: white;">
+                                <th style="border: 1px solid #667eea; padding: 6px; text-align: center;">重量/kg</th>
+                                <th style="border: 1px solid #667eea; padding: 6px; text-align: center;">公开价</th>
+                                <th style="border: 1px solid #667eea; padding: 6px; text-align: center;">折扣后价格</th>
+                                <th style="border: 1px solid #667eea; padding: 6px; text-align: center;">含燃油价格</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                secondPageData.forEach((item, idx) => {
+                    const discountPrice = item.publicPrice * customerDiscount;
+                    const fuelPrice = item.publicPrice * customerDiscount * (1 + newFuelRate);
+                    const bgColor = idx % 2 === 0 ? '#ffffff' : '#f5f5f5';
+                    secondPageHtml += `
+                        <tr style="background: ${bgColor};">
+                            <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">${item.weight}</td>
+                            <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">¥${item.publicPrice}</td>
+                            <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">¥${discountPrice.toFixed(2)}</td>
+                            <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">¥${fuelPrice.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                secondPageHtml += `
                         </tbody>
                     </table>
 
-                    <div style="margin-top: 20px; font-size: 9px; color: #666;">
-                        <p><strong>说明:</strong></p>
-                        <p style="margin: 5px 0;">1. 以上价格以人民币(CNY)为单位</p>
-                        <p style="margin: 5px 0;">2. 燃油附加费率会根据官网每月浮动，具体以官网公布为准</p>
-                        <p style="margin: 5px 0;">3. 折扣后含燃油价格 = 公开价 × 折扣率 × (1 + 燃油附加费率)</p>
-                        <p style="margin: 5px 0;">4. 本报价单有效期为价格生效日期起30天内</p>
-                        <p style="margin: 5px 0;">5. 具体业务规则请参考正式合同条款</p>
+                    <div style="font-size: 10px; color: #555; line-height: 1.6;">
+                        <p style="font-weight: bold; margin-bottom: 6px;">备注:以上公开价适用于出口预付商业件</p>
+                        <p style="margin: 3px 0;">• 计重规则:实际重量和体积重量相比，取较重者为计费重量；体积计算公式：长(CM)×宽(CM)×高(CM)÷${volumeFactor}</p>
+                        <p style="margin: 3px 0;">• 计价单位:20kg以内（含）为0.5kg，不足0.5kg按0.5kg计算；20kg以上为1kg，不足1kg按1kg计算</p>
+                        <p style="margin: 3px 0;">• 增值服务附加费可咨询 <strong>400-888-1378</strong></p>
+                        <p style="margin: 3px 0;">• 价格调整生效请登录: <a href="https://www.ydhex.com/" style="color: #667eea;">https://www.ydhex.com/</a></p>
+                        <p style="margin: 3px 0;">• 此价格表以人民币计价，其它超尺寸费、超区费等附加费按实际情况另收</p>
                     </div>
 
-                    <div style="margin-top: 20px; text-align: center; font-size: 9px; color: #999;">
-                        YDH 义达跨境 | https://www.ydhex.com
+                    <div style="margin-top: 15px; text-align: center; font-size: 10px; color: #999;">
+                        义达跨境 | https://www.ydhex.com
                     </div>
                 `;
 
-                tempDiv.innerHTML = htmlContent;
+                // 创建PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const margin = 15;
+                const contentWidth = pdfWidth - margin * 2;
+
+                // 先渲染两页内容到canvas
+                const renderPromises = [];
+
+                // 渲染第一页
+                tempDiv.innerHTML = firstPageHtml;
+                tempDiv.style.width = contentWidth + 'mm';
                 document.body.appendChild(tempDiv);
-
-                console.log('HTML内容已创建');
-
-                // 使用html2canvas将HTML渲染为canvas
-                html2canvas(tempDiv, {
-                    scale: 2, // 提高清晰度
+                renderPromises.push(html2canvas(tempDiv, {
+                    scale: 2,
                     useCORS: true,
-                    logging: true,
                     backgroundColor: '#ffffff'
-                }).then(canvas => {
-                    console.log('Canvas生成成功，尺寸:', canvas.width, 'x', canvas.height);
+                }));
 
-                    // 获取canvas的图片数据
-                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                // 渲染第二页
+                tempDiv.innerHTML = secondPageHtml;
+                renderPromises.push(html2canvas(tempDiv, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                }));
 
+                Promise.all(renderPromises).then(results => {
                     // 移除临时元素
                     document.body.removeChild(tempDiv);
 
-                    // 创建PDF
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF({
-                        orientation: 'portrait',
-                        unit: 'mm',
-                        format: 'a4'
-                    });
+                    const [canvas1, canvas2] = results;
 
-                    const pdfWidth = doc.internal.pageSize.getWidth();
-                    const pdfHeight = doc.internal.pageSize.getHeight();
+                    // jsPDF默认有一页空白页，先删除它
+                    doc.deletePage(1);
 
-                    // 计算图片在PDF中的尺寸
-                    const imgWidth = pdfWidth - 40; // 左右各20mm边距
-                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    // 创建第一页
+                    doc.addPage();
+                    const imgData1 = canvas1.toDataURL('image/jpeg', 0.95);
+                    const imgHeight1 = (canvas1.height * contentWidth) / canvas1.width;
+                    doc.addImage(imgData1, 'JPEG', margin, margin, contentWidth, imgHeight1);
 
-                    // 如果内容超过一页，分页处理
-                    if (imgHeight > pdfHeight - 40) {
-                        // 这里简单处理：如果内容太长，压缩到一页
-                        const scaleFactor = (pdfHeight - 40) / imgHeight;
-                        const finalWidth = imgWidth * scaleFactor;
-                        const finalHeight = pdfHeight - 40;
-                        doc.addImage(imgData, 'JPEG', 20, 20, finalWidth, finalHeight);
-                    } else {
-                        doc.addImage(imgData, 'JPEG', 20, 20, imgWidth, imgHeight);
-                    }
+                    // 创建第二页
+                    doc.addPage();
+                    const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
+                    const imgHeight2 = (canvas2.height * contentWidth) / canvas2.width;
+                    doc.addImage(imgData2, 'JPEG', margin, margin, contentWidth, imgHeight2);
 
-                    console.log('准备保存PDF...');
-
-                    // 保存PDF
-                    const fileName = `${productName}_折扣价报价单_${effectiveDate}.pdf`;
+                    // 保存PDF - 格式：公司名+产品名+生效日期
+                    const companyDisplayName = companyName || '义达跨境';
+                    const fileName = `${companyDisplayName}_${productName}_${effectiveDate}.pdf`;
                     doc.save(fileName);
 
-                    console.log('PDF保存成功:', fileName);
-
                 }).catch(error => {
-                    // 移除临时元素
                     if (tempDiv.parentNode) {
                         document.body.removeChild(tempDiv);
                     }
-
-                    const errorMsg = '渲染PDF时发生错误:\n\n' +
-                        '错误名称: ' + error.name + '\n' +
-                        '错误信息: ' + error.message + '\n' +
-                        '错误堆栈: ' + error.stack;
+                    const errorMsg = '渲染PDF时发生错误:\n\n' + error.message;
                     showError(errorMsg);
-                    alert('导出PDF时发生错误: ' + error.message + '\n\n详细错误信息已显示在页面上');
+                    alert('导出PDF时发生错误: ' + error.message);
                 });
 
             } catch (error) {
