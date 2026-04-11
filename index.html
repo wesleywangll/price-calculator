@@ -39,10 +39,33 @@
             align-items: center;
             gap: 10px;
         }
+        
+        .header .links {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .header a {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            color: #666;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        
+        .header a:hover { background: #667eea; color: white; }
 
         .header p {
             color: #666;
             font-size: 14px;
+        }
+        
+        .header .links {
+            display: flex;
+            gap: 10px;
         }
 
         .main-content {
@@ -398,6 +421,9 @@
                 价格体系过渡计算器
             </h1>
             <p>体系一（首重+续重）→ 体系二（公开价×折扣×新燃油）折扣反推与价差分析工具</p>
+            <div class="links">
+                <a href="multi-quote.html">📋 多产品报价单生成器</a>
+            </div>
         </div>
 
         <div class="main-content">
