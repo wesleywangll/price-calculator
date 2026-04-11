@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多产品报价单生成器 - YDH 义达跨境</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        .header {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header h1 { color: #333; font-size: 22px; display: flex; align-items: center; gap: 10px; }
+        .header .links { display: flex; gap: 10px; }
+        .header a {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            color: #666;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        .header a:hover { background: #667eea; color: white; }
+        
+        .fuel-alert {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .fuel-alert .icon { font-size: 24px; }
+        .fuel-alert .text { flex: 1; }
+        .fuel-alert strong { color: #856404; }
+        .fuel-alert input {
+            width: 70px;
+            padding: 8px;
+            border: 2px solid #ffc107;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 1000px) { .main-content { grid-template-columns: 1fr; } }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .card h2 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; color: #555; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        
+        .product-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .product-section.disabled { opacity: 0.5; }
+        .product-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .product-header input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .product-header h3 {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+        }
+        .product-header .tag {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .tag-small { background: #e3f2fd; color: #1976d2; }
+        .tag-large { background: #fff3e0; color: #e65100; }
+        .tag-both { background: #e8f5e9; color: #2e7d32; }
+        
+        .product-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .product-inputs .input-item { }
+        .product-inputs label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+        .product-inputs input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .product-inputs input:disabled { background: #eee; }
+        
+        .large-inputs {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ccc;
+        }
+        .large-inputs h4 { font-size: 12px; color: #e65100; margin-bottom: 8px; }
+        .large-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .large-grid label { display: block; font-size: 11px; color: #666; margin-bottom: 2px; }
+        .large-grid input { width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+        .large-grid input:disabled { background: #eee; }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+        
+        .public-price-note {
+            background: #e8f5e9;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            color: #2e7d32;
+        }
+        .public-price-note strong { display: block; margin-bottom: 5px; }
+        
+        .preview-tip {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 多产品报价单生成器</h1>
+            <div class="links">
+                <a href="index.html">← 价格过渡计算器</a>
+            </div>
+        </div>
+        
+        <div class="fuel-alert">
+            <span class="icon">⚠️</span>
+            <div class="text">
+                <strong>浮动燃油提示：</strong>当前燃油费率仅限当月使用，未来浮动燃油费率以官网发布为准
+            </div>
+            <div>
+                <label>燃油费率</label>
+                <input type="number" id="fuelRate" value="25" min="0" max="100" step="0.1"> %
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="card">
+                <h2>📝 客户信息</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>公司名称</label>
+                        <input type="text" id="companyName" placeholder="请输入公司名称">
+                    </div>
+                    <div class="form-group">
+                        <label>报价日期</label>
+                        <input type="date" id="quoteDate">
+                    </div>
+                </div>
+                
+                <h2 style="margin-top:20px;">💰 产品报价配置</h2>
+                <div class="public-price-note">
+                    <strong>📌 小货公开价说明</strong>
+                    小货价格 = 公开价 × 折扣 × (1 + 燃油费率)<br>
+                    下方各产品只需填写折扣，系统自动计算最终报价
+                </div>
+                
+                <!-- 日本限时达（东京） -->
+                <div class="product-section disabled" id="section-tokyo">
+                    <div class="product-header">
+                        <input type="checkbox" id="check-tokyo" onchange="toggleProduct('tokyo', this.checked)">
+                        <label for="check-tokyo" style="flex:1;cursor:pointer;">
+                            <h3 style="margin:0;">日本限时达（东京）</h3>
+                        </label>
+                        <span class="tag tag-small">小货 0.5-20kg</span>
+                    </div>
+                    <div class="product-inputs">
+                        <div class="input-item">
+                            <label>客户折扣 (如 0.85)</label>
+                            <input type="number" id="discount-tokyo" value="1" step="0.01" min="0" max="1" disabled onchange="calculateAll()">
+                        </div>
+                        <div class="input-item">
+                            <label>计抛系数</label>
+                            <input type="text" value="5000" disabled style="background:#e3f2fd;color:#1976d2;font-weight:bold;">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 日本限时达（大阪） -->
+                <div class="product-section disabled" id="section-osaka">
+                    <div class="product-header">
+                        <input type="checkbox" id="check-osaka" onchange="toggleProduct('osaka', this.checked)">
+                        <label for="check-osaka" style="flex:1;cursor:pointer;">
+                            <h3 style="margin:0;">日本限时达（大阪）</h3>
+                        </label>
+                        <span class="tag tag-small">小货 0.5-20kg</span>
+                    </div>
+                    <div class="product-inputs">
+                        <div class="input-item">
+                            <label>客户折扣 (如 0.85)</label>
+                            <input type="number" id="discount-osaka" value="1" step="0.01" min="0" max="1" disabled onchange="calculateAll()">
+                        </div>
+                        <div class="input-item">
+                            <label>计抛系数</label>
+                            <input type="text" value="5000" disabled style="background:#e3f2fd;color:#1976d2;font-weight:bold;">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 日本商业件-特快 -->
+                <div class="product-section disabled" id="section-express">
+                    <div class="product-header">
+                        <input type="checkbox" id="check-express" onchange="toggleProduct('express', this.checked)">
+                        <label for="check-express" style="flex:1;cursor:pointer;">
+                            <h3 style="margin:0;">日本商业件-特快</h3>
+                        </label>
+                        <span class="tag tag-both">小货+大货</span>
+                    </div>
+                    <div class="product-inputs">
+                        <div class="input-item">
+                            <label>小货折扣 (如 0.85)</label>
+                            <input type="number" id="discount-express" value="1" step="0.01" min="0" max="1" disabled onchange="calculateAll()">
+                        </div>
+                        <div class="input-item">
+                            <label>计抛系数</label>
+                            <select id="vf-express" disabled onchange="calculateAll()" style="padding:8px;border:1px solid #ddd;border-radius:4px;">
+                                <option value="5000">5000</option>
+                                <option value="6000">6000</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="large-inputs">
+                        <h4>📦 大货单价 (元/kg，未含燃油) | 计抛: <span id="vf-display-express">5000</span></h4>
+                        <div class="large-grid">
+                            <div><label>21-30kg</label><input type="number" id="price-express-21_30" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>31-50kg</label><input type="number" id="price-express-31_50" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>51-100kg</label><input type="number" id="price-express-51_100" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>101-300kg</label><input type="number" id="price-express-101_300" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>301+kg</label><input type="number" id="price-express-301" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 日本商业件 -->
+                <div class="product-section disabled" id="section-commercial">
+                    <div class="product-header">
+                        <input type="checkbox" id="check-commercial" onchange="toggleProduct('commercial', this.checked)">
+                        <label for="check-commercial" style="flex:1;cursor:pointer;">
+                            <h3 style="margin:0;">日本商业件</h3>
+                        </label>
+                        <span class="tag tag-both">小货+大货</span>
+                    </div>
+                    <div class="product-inputs">
+                        <div class="input-item">
+                            <label>小货折扣 (如 0.85)</label>
+                            <input type="number" id="discount-commercial" value="1" step="0.01" min="0" max="1" disabled onchange="calculateAll()">
+                        </div>
+                        <div class="input-item">
+                            <label>计抛系数</label>
+                            <select id="vf-commercial" disabled onchange="calculateAll()" style="padding:8px;border:1px solid #ddd;border-radius:4px;">
+                                <option value="5000">5000</option>
+                                <option value="6000">6000</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="large-inputs">
+                        <h4>📦 大货单价 (元/kg，未含燃油) | 计抛: <span id="vf-display-commercial">5000</span></h4>
+                        <div class="large-grid">
+                            <div><label>21-30kg</label><input type="number" id="price-commercial-21_30" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>31-50kg</label><input type="number" id="price-commercial-31_50" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>51-100kg</label><input type="number" id="price-commercial-51_100" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>101-300kg</label><input type="number" id="price-commercial-101_300" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>301+kg</label><input type="number" id="price-commercial-301" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 日本商业件经济 -->
+                <div class="product-section disabled" id="section-economy">
+                    <div class="product-header">
+                        <input type="checkbox" id="check-economy" onchange="toggleProduct('economy', this.checked)">
+                        <label for="check-economy" style="flex:1;cursor:pointer;">
+                            <h3 style="margin:0;">日本商业件经济</h3>
+                        </label>
+                        <span class="tag tag-large">大货 21kg+</span>
+                    </div>
+                    <div class="product-inputs">
+                        <div class="input-item">
+                            <label>计抛系数</label>
+                            <select id="vf-economy" disabled onchange="calculateAll()" style="padding:8px;border:1px solid #ddd;border-radius:4px;">
+                                <option value="5000">5000</option>
+                                <option value="6000">6000</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="large-inputs">
+                        <h4>📦 大货单价 (元/kg，未含燃油) | 计抛: <span id="vf-display-economy">5000</span></h4>
+                        <div class="large-grid">
+                            <div><label>21-30kg</label><input type="number" id="price-economy-21_30" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>31-50kg</label><input type="number" id="price-economy-31_50" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>51-100kg</label><input type="number" id="price-economy-51_100" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>101-300kg</label><input type="number" id="price-economy-101_300" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>301+kg</label><input type="number" id="price-economy-301" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 日本商业件超级经济 -->
+                <div class="product-section disabled" id="section-super">
+                    <div class="product-header">
+                        <input type="checkbox" id="check-super" onchange="toggleProduct('super', this.checked)">
+                        <label for="check-super" style="flex:1;cursor:pointer;">
+                            <h3 style="margin:0;">日本商业件超级经济</h3>
+                        </label>
+                        <span class="tag tag-large">大货 21kg+</span>
+                    </div>
+                    <div class="product-inputs">
+                        <div class="input-item">
+                            <label>计抛系数</label>
+                            <select id="vf-super" disabled onchange="calculateAll()" style="padding:8px;border:1px solid #ddd;border-radius:4px;">
+                                <option value="5000">5000</option>
+                                <option value="6000">6000</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="large-inputs">
+                        <h4>📦 大货单价 (元/kg，未含燃油) | 计抛: <span id="vf-display-super">5000</span></h4>
+                        <div class="large-grid">
+                            <div><label>21-30kg</label><input type="number" id="price-super-21_30" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>31-50kg</label><input type="number" id="price-super-31_50" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>51-100kg</label><input type="number" id="price-super-51_100" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>101-300kg</label><input type="number" id="price-super-101_300" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                            <div><label>301+kg</label><input type="number" id="price-super-301" value="0" step="0.1" disabled onchange="calculateAll()"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📊 报价预览</h2>
+                <div id="previewContent" style="font-size:13px;line-height:1.8;color:#666;min-height:200px;">
+                    <p style="text-align:center;color:#999;padding:50px 0;">请勾选要报价的产品并填写信息</p>
+                </div>
+                
+                <button class="btn" onclick="exportPDF()">📄 生成PDF报价单</button>
+                <p class="preview-tip">* 生成的PDF可直接发送给客户</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 公开价表（体系二公开价，不含燃油）
+        const publicPrices = {
+            0.5: 295, 1: 370, 1.5: 445, 2: 520, 2.5: 595,
+            3: 670, 3.5: 750, 4: 830, 4.5: 910, 5: 990,
+            5.5: 1070, 6: 1150, 6.5: 1230, 7: 1310,
+            7.5: 1390, 8: 1470, 8.5: 1550, 9: 1630,
+            9.5: 1710, 10: 1790, 10.5: 1870, 11: 1950,
+            11.5: 2030, 12: 2110, 12.5: 2190, 13: 2270,
+            13.5: 2350, 14: 2430, 14.5: 2510, 15: 2590,
+            15.5: 2670, 16: 2750, 16.5: 2830, 17: 2910,
+            17.5: 2990, 18: 3070, 18.5: 3150, 19: 3230,
+            19.5: 3310, 20: 3390
+        };
+        
+        // 产品配置
+        const products = {
+            tokyo: { name: '日本限时达（东京）', shortName: '限时达(东京)', hasSmall: true, hasLarge: false, fixedVolumeFactor: 5000 },
+            osaka: { name: '日本限时达（大阪）', shortName: '限时达(大阪)', hasSmall: true, hasLarge: false, fixedVolumeFactor: 5000 },
+            express: { name: '日本商业件-特快', shortName: '商业件-特快', hasSmall: true, hasLarge: true, fixedVolumeFactor: null },
+            commercial: { name: '日本商业件', shortName: '商业件', hasSmall: true, hasLarge: true, fixedVolumeFactor: null },
+            economy: { name: '日本商业件经济', shortName: '商业件经济', hasSmall: false, hasLarge: true, fixedVolumeFactor: null },
+            super: { name: '日本商业件超级经济', shortName: '商业件超经济', hasSmall: false, hasLarge: true, fixedVolumeFactor: null }
+        };
+        
+        const segments = ['21-30', '31-50', '51-100', '101-300', '301+'];
+        
+        // 切换产品勾选状态 - 使用参数传递checked状态，更可靠
+        function toggleProduct(key, isChecked) {
+            const section = document.getElementById('section-' + key);
+            const inputs = section.querySelectorAll('input');
+            const selects = section.querySelectorAll('select');
+            
+            if (isChecked) {
+                section.classList.remove('disabled');
+                inputs.forEach(input => input.disabled = false);
+                selects.forEach(select => select.disabled = false);
+            } else {
+                section.classList.add('disabled');
+                inputs.forEach(input => input.disabled = true);
+                selects.forEach(select => select.disabled = true);
+            }
+            
+            updatePreview();
+        }
+        
+        // 获取产品计抛系数
+        function getVolumeFactor(key) {
+            if (products[key].fixedVolumeFactor) {
+                return products[key].fixedVolumeFactor;
+            }
+            return parseInt(document.getElementById('vf-' + key)?.value) || 5000;
+        }
+        
+        // 计算所有
+        function calculateAll() {
+            updatePreview();
+        }
+        
+        // 更新预览
+        function updatePreview() {
+            const fuelRate = parseFloat(document.getElementById('fuelRate').value) / 100 || 0;
+            const hasFuel = fuelRate > 0;
+            const preview = document.getElementById('previewContent');
+            
+            // 燃油提示
+            let fuelHtml = '<div style="background:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:15px;">';
+            if (hasFuel) {
+                fuelHtml += '<strong>浮动燃油:</strong> ' + (fuelRate * 100).toFixed(1) + '%';
+            } else {
+                fuelHtml += '<strong>本报价不含燃油</strong>，当月燃油参考官网';
+            }
+            fuelHtml += '</div>';
+            let html = fuelHtml;
+            
+            let hasSmall = false;
+            let hasLarge = false;
+            
+            // 检查有的小货和大货产品
+            Object.keys(products).forEach(key => {
+                if (document.getElementById('check-' + key).checked) {
+                    if (products[key].hasSmall) hasSmall = true;
+                    if (products[key].hasLarge) hasLarge = true;
+                }
+                // 更新计抛系数显示
+                if (document.getElementById('vf-display-' + key)) {
+                    document.getElementById('vf-display-' + key).textContent = getVolumeFactor(key);
+                }
+            });
+            
+            // 小货预览 - 重量段按行，公开价+产品按列
+            if (hasSmall) {
+                html += '<h4 style="color:#667eea;margin:10px 0 5px;">📦 小货报价 (0.5-20kg)</h4>';
+                html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:600px;">';
+                
+                // 获取选中的小货产品
+                const selectedSmallProducts = Object.keys(products).filter(key => 
+                    document.getElementById('check-' + key).checked && products[key].hasSmall
+                );
+                
+                // 表头
+                html += '<tr style="background:#667eea;color:white;">';
+                html += '<th style="padding:6px;border:1px solid #ddd;">重量段</th>';
+                html += '<th style="padding:6px;border:1px solid #ddd;">公开价</th>';
+                selectedSmallProducts.forEach(key => {
+                    const vf = getVolumeFactor(key);
+                    html += '<th style="padding:6px;border:1px solid #ddd;text-align:center;">' + products[key].shortName + '<br><small style="font-weight:normal;">(计抛' + vf + ')</small></th>';
+                });
+                html += '</tr>';
+                
+                // 数据行 - 每行一个重量
+                const weightKeys = Object.keys(publicPrices).sort((a, b) => parseFloat(a) - parseFloat(b));
+                weightKeys.forEach(w => {
+                    html += '<tr>';
+                    html += '<td style="padding:5px;border:1px solid #ddd;font-weight:600;">' + w + 'kg</td>';
+                    html += '<td style="padding:5px;border:1px solid #ddd;text-align:center;color:#666;">¥' + publicPrices[w] + '</td>';
+                    selectedSmallProducts.forEach(key => {
+                        const discount = parseFloat(document.getElementById('discount-' + key).value) || 1;
+                        const finalPrice = publicPrices[w] * discount * (hasFuel ? (1 + fuelRate) : 1);
+                        html += '<td style="padding:5px;border:1px solid #ddd;text-align:center;font-weight:bold;">¥' + finalPrice.toFixed(2) + '</td>';
+                    });
+                    html += '</tr>';
+                });
+                html += '</table></div>';
+            }
+            
+            // 大货预览
+            if (hasLarge) {
+                html += '<h4 style="color:#e65100;margin:15px 0 5px;">📦 大货报价 (21kg+)</h4>';
+                html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+                html += '<tr style="background:#e65100;color:white;"><th style="padding:6px;border:1px solid #ddd;">产品</th><th style="padding:6px;border:1px solid #ddd;">计抛</th>';
+                segments.forEach(seg => {
+                    html += '<th style="padding:6px;border:1px solid #ddd;">' + seg + 'kg</th>';
+                });
+                html += '</tr>';
+                
+                Object.keys(products).forEach(key => {
+                    if (document.getElementById('check-' + key).checked && products[key].hasLarge) {
+                        const vf = getVolumeFactor(key);
+                        html += '<tr><td style="padding:5px;border:1px solid #ddd;font-weight:600;">' + products[key].shortName + '</td><td style="padding:5px;border:1px solid #ddd;text-align:center;font-size:10px;">' + vf + '</td>';
+                        segments.forEach(seg => {
+                            const segId = seg.replace('+', '').replace('-', '_');
+                            const price = parseFloat(document.getElementById('price-' + key + '-' + segId).value) || 0;
+                            if (price > 0) {
+                                const finalPrice = price * (hasFuel ? (1 + fuelRate) : 1);
+                                html += '<td style="padding:5px;border:1px solid #ddd;text-align:center;font-weight:bold;">¥' + finalPrice.toFixed(2) + '</td>';
+                            } else {
+                                html += '<td style="padding:5px;border:1px solid #ddd;text-align:center;color:#999;">-</td>';
+                            }
+                        });
+                        html += '</tr>';
+                    }
+                });
+                html += '</table>';
+            }
+            
+            if (!hasSmall && !hasLarge) {
+                html += '<p style="text-align:center;color:#999;padding:30px 0;">请勾选要报价的产品</p>';
+            }
+            
+            preview.innerHTML = html;
+        }
+        
+        // 导出PDF
+        async function exportPDF() {
+            const companyName = document.getElementById('companyName').value || '客户';
+            const quoteDate = document.getElementById('quoteDate').value || new Date().toISOString().slice(0, 10);
+            const fuelRate = parseFloat(document.getElementById('fuelRate').value) / 100 || 0;
+            const hasFuel = fuelRate > 0;
+            
+            // 检查是否有选择产品
+            let selectedProducts = [];
+            Object.keys(products).forEach(key => {
+                if (document.getElementById('check-' + key) && document.getElementById('check-' + key).checked) {
+                    selectedProducts.push(key);
+                }
+            });
+            
+            if (selectedProducts.length === 0) {
+                alert('请至少选择一个产品进行报价');
+                return;
+            }
+            
+            // 超时保护函数
+            const withTimeout = (promise, ms) => {
+                return Promise.race([
+                    promise,
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('生成超时，请检查网络连接')), ms)
+                    )
+                ]);
+            };
+            
+            let tempDiv1 = null, tempDiv2 = null;
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const margin = 10;
+                const contentWidth = pdfWidth - margin * 2;
+                
+                // 小货表格分页：前24行(0.5-12kg)放第一页，后16行(12.5-20kg)放第二页
+                // 因为表头增加折扣信息版面下移，减少第一页重量段
+                const weightKeys = Object.keys(publicPrices).sort((a, b) => parseFloat(a) - parseFloat(b));
+                const splitIndex = 24; // 0.5-12kg共24个重量段
+                const smallPage1 = weightKeys.slice(0, splitIndex);
+                const smallPage2 = weightKeys.slice(splitIndex);
+                
+                // 小货部分 - 重量段按行，公开价+产品按列
+                let hasSmallProducts = selectedProducts.filter(key => products[key].hasSmall);
+                
+                // 构建小货表格HTML（通用函数）
+                function buildSmallTable(weights, pageLabel) {
+                // 根据是否有燃油显示不同公式
+                const formulaText = hasFuel ? '公开价 × 折扣 × (1 + 燃油费率)' : '公开价 × 折扣（不含燃油）';
+                
+                let tableHtml = `
+                    <h2 style="background:#667eea;color:white;padding:8px 12px;font-size:14px;margin-bottom:10px;">📦 小件报价 (${weights[0]}kg-${weights[weights.length-1]}kg)${pageLabel}</h2>
+                    <p style="font-size:10px;color:#666;margin-bottom:8px;">计算公式：${formulaText}</p>
+                    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:15px;">
+                        <thead>
+                            <tr style="background:#f5f5f5;">
+                                <th style="padding:6px;border:1px solid #ddd;text-align:center;">重量段</th>
+                                <th style="padding:6px;border:1px solid #ddd;text-align:center;">公开价</th>
+                                ${hasSmallProducts.map(key => {
+                                    const vf = getVolumeFactor(key);
+                                    const discount = parseFloat(document.getElementById('discount-' + key).value) || 1;
+                                    return `<th style="padding:6px;border:1px solid #ddd;text-align:center;">${products[key].shortName}<br><small style="font-weight:normal;">(计抛${vf}/折${(discount * 100).toFixed(0)}%)</small></th>`;
+                                }).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                weights.forEach(w => {
+                    let row = `<tr>`;
+                    row += `<td style="padding:5px;border:1px solid #ddd;text-align:center;font-weight:600;">${w}kg</td>`;
+                    row += `<td style="padding:5px;border:1px solid #ddd;text-align:center;color:#666;">¥${publicPrices[w]}</td>`;
+                    hasSmallProducts.forEach(key => {
+                        const discount = parseFloat(document.getElementById('discount-' + key).value) || 1;
+                        const finalPrice = publicPrices[w] * discount * (hasFuel ? (1 + fuelRate) : 1);
+                        row += `<td style="padding:5px;border:1px solid #ddd;text-align:center;font-weight:bold;">¥${finalPrice.toFixed(2)}</td>`;
+                    });
+                    row += '</tr>';
+                    tableHtml += row;
+                });
+                
+                tableHtml += '</tbody></table>';
+                return tableHtml;
+            }
+            
+            // ========== 第一页内容：小货前部分 (0.5-13.5kg) ==========
+            // Logo图片：使用网络地址，加载失败则不显示
+            const logoUrl = 'https://raw.githubusercontent.com/wesleywangll/price-calculator/main/images/ydh-logo-header.png';
+            
+            tempDiv1 = document.createElement('div');
+            tempDiv1.style.cssText = 'position:fixed;left:-9999px;top:0;width:190mm;padding:15mm;background:#fff;font-family:PingFang SC,Microsoft YaHei,Arial,sans-serif;';
+            document.body.appendChild(tempDiv1);
+            
+            let pdfHtml1 = `
+                <div style="width:100%;max-width:170mm;margin:0 auto;">
+                    <div style="text-align:center;margin-bottom:15px;">
+                        <img src="${logoUrl}" style="max-height:50px;display:none;" id="pdf-logo-1" onload="this.style.display='block'" onerror="this.style.display='none'">
+                    </div>
+                    <h1 style="text-align:center;color:#333;font-size:20px;margin-bottom:15px;">义达跨境日本商业件产品报价单</h1>
+                    
+                    <div style="display:flex;justify-content:space-between;margin-bottom:20px;font-size:12px;">
+                        <div><strong>客户公司:</strong> ${companyName}</div>
+                        <div><strong>报价日期:</strong> ${quoteDate}</div>
+                    </div>
+                    
+                    <div style="background:#fff3cd;padding:10px 15px;border-radius:6px;margin-bottom:20px;border:1px solid #ffc107;">
+                        <strong style="color:#856404;">⚠️ 重要提示：</strong>
+                        ${hasFuel 
+                            ? `<span style="color:#856404;">当前浮动燃油费率 <strong>${(fuelRate * 100).toFixed(1)}%</strong> 仅限当月使用，未来浮动燃油费率以官网发布为准</span>`
+                            : `<span style="color:#856404;"><strong>本报价不含燃油</strong>，当月浮动燃油费率以官网发布为准</span>`
+                        }
+                    </div>
+            `;
+            
+            if (hasSmallProducts.length > 0) {
+                pdfHtml1 += buildSmallTable(smallPage1, '');
+            }
+            
+            pdfHtml1 += '</div>';
+            tempDiv1.innerHTML = pdfHtml1;
+            
+            // 等待一小段时间让logo加载
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const canvas1 = await withTimeout(html2canvas(tempDiv1, { scale: 2, useCORS: true, backgroundColor: '#ffffff', imageTimeout: 3000, onclone: function(clonedDoc) { clonedDoc.body.style.zoom = 1; } }), 15000);
+            document.body.removeChild(tempDiv1);
+            
+            const imgData1 = canvas1.toDataURL('image/jpeg', 0.95);
+            const imgHeight1 = (canvas1.height * contentWidth) / canvas1.width;
+            doc.addImage(imgData1, 'JPEG', margin, margin, contentWidth, imgHeight1);
+            
+            // ========== 第二页内容：小货后部分 + 大货 + 备注 ==========
+            let hasLargeProducts = selectedProducts.filter(key => products[key].hasLarge);
+            
+            tempDiv2 = document.createElement('div');
+            tempDiv2.style.cssText = 'position:fixed;left:-9999px;top:0;width:190mm;padding:15mm;background:#fff;font-family:PingFang SC,Microsoft YaHei,Arial,sans-serif;';
+            document.body.appendChild(tempDiv2);
+            
+            let pdfHtml2 = `
+                <div style="width:100%;max-width:170mm;margin:0 auto;">
+                    <div style="text-align:center;margin-bottom:12px;">
+                        <img src="${logoUrl}" style="max-height:40px;display:none;" id="pdf-logo-2" onload="this.style.display='block'" onerror="this.style.display='none'">
+                    </div>
+                    <h1 style="text-align:center;color:#333;font-size:18px;margin-bottom:12px;">义达跨境日本商业件产品报价单（续）</h1>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:15px;font-size:11px;">
+                        <div><strong>客户公司:</strong> ${companyName}</div>
+                        <div><strong>报价日期:</strong> ${quoteDate}</div>
+                    </div>
+            `;
+            
+            // 小货后部分
+            if (hasSmallProducts.length > 0) {
+                pdfHtml2 += buildSmallTable(smallPage2, '（续）');
+            }
+            
+            // 大货部分
+            const largeFormulaText = hasFuel ? '单价/kg × (1 + 燃油费率)' : '单价/kg（不含燃油）';
+            if (hasLargeProducts.length > 0) {
+                pdfHtml2 += `
+                    <h2 style="background:#e65100;color:white;padding:8px 12px;font-size:14px;margin:15px 0 10px;">📦 大件报价 (21kg+)</h2>
+                    <p style="font-size:10px;color:#666;margin-bottom:8px;">计算公式：${largeFormulaText}</p>
+                    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:15px;">
+                        <thead>
+                            <tr style="background:#fff3e0;">
+                                <th style="padding:8px;border:1px solid #ffccbc;text-align:center;">产品</th>
+                                <th style="padding:8px;border:1px solid #ffccbc;text-align:center;">计抛</th>
+                                <th style="padding:8px;border:1px solid #ffccbc;text-align:center;">21-30kg</th>
+                                <th style="padding:8px;border:1px solid #ffccbc;text-align:center;">31-50kg</th>
+                                <th style="padding:8px;border:1px solid #ffccbc;text-align:center;">51-100kg</th>
+                                <th style="padding:8px;border:1px solid #ffccbc;text-align:center;">101-300kg</th>
+                                <th style="padding:8px;border:1px solid #ffccbc;text-align:center;">301+kg</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                hasLargeProducts.forEach(key => {
+                    const vf = getVolumeFactor(key);
+                    let row = `<tr><td style="padding:6px;border:1px solid #ffccbc;font-weight:600;">${products[key].shortName}</td>`;
+                    row += `<td style="padding:6px;border:1px solid #ffccbc;text-align:center;font-size:9px;">${vf}</td>`;
+                    segments.forEach(seg => {
+                        const segId = seg.replace('+', '').replace('-', '_');
+                        const price = parseFloat(document.getElementById('price-' + key + '-' + segId).value) || 0;
+                        if (price > 0) {
+                            const finalPrice = price * (hasFuel ? (1 + fuelRate) : 1);
+                            row += `<td style="padding:6px;border:1px solid #ffccbc;text-align:center;font-weight:bold;">¥${finalPrice.toFixed(2)}</td>`;
+                        } else {
+                            row += `<td style="padding:6px;border:1px solid #ffccbc;text-align:center;color:#999;">-</td>`;
+                        }
+                    });
+                    row += '</tr>';
+                    pdfHtml2 += row;
+                });
+                
+                pdfHtml2 += '</tbody></table>';
+            }
+            
+            // 备注
+            pdfHtml2 += `
+                <div style="padding:12px;background:#fafafa;border-radius:6px;border:1px solid #e0e0e0;font-size:9px;color:#37474f;">
+                    <p style="font-weight:bold;margin:0 0 8px;">备注说明</p>
+                    <p style="margin:3px 0;">1. 以上公开价适用于出口预付商业件</p>
+                    <p style="margin:3px 0;">2. 体积计算公式：长(CM) × 宽(CM) × 高(CM) ÷ 计抛系数</p>
+                    <p style="margin:3px 0;">3. 计价单位: 20kg以内（含）为0.5kg，不足0.5kg按0.5kg计算；20kg以上为1kg</p>
+                    <p style="margin:3px 0;">4. 增值服务附加费可咨询 <strong>400-888-1378</strong></p>
+                    <p style="margin:3px 0;">5. 价格调整生效请登录: <a href="https://www.ydhex.com/" style="color:#667eea;">https://www.ydhex.com/</a></p>
+                </div>
+                <div style="margin-top:15px;text-align:center;font-size:10px;color:#999;">义达跨境 | https://www.ydhex.com</div>
+            `;
+            
+            pdfHtml2 += '</div>';
+            tempDiv2.innerHTML = pdfHtml2;
+            
+            // 等待一小段时间让logo加载
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const canvas2 = await withTimeout(html2canvas(tempDiv2, { scale: 2, useCORS: true, backgroundColor: '#ffffff', imageTimeout: 3000, onclone: function(clonedDoc) { clonedDoc.body.style.zoom = 1; } }), 15000);
+            document.body.removeChild(tempDiv2);
+            
+            const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
+            const imgHeight2 = (canvas2.height * contentWidth) / canvas2.width;
+            
+            doc.addPage();
+            doc.addImage(imgData2, 'JPEG', margin, margin, contentWidth, imgHeight2);
+
+            doc.save(`${companyName}_报价单_${quoteDate}.pdf`);
+            } catch (error) {
+                if (tempDiv1 && tempDiv1.parentNode) document.body.removeChild(tempDiv1);
+                if (tempDiv2 && tempDiv2.parentNode) document.body.removeChild(tempDiv2);
+                alert('PDF生成失败: ' + error.message);
+                console.error('PDF错误:', error);
+            }
+        }
+        
+        // 初始化日期
+        document.getElementById('quoteDate').value = new Date().toISOString().slice(0, 10);
+    </script>
+</body>
+</html>
