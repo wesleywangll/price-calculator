@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>价格体系过渡计算器 - YDH 义达跨境</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header .links {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .header a {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            color: #666;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        
+        .header a:hover { background: #667eea; color: white; }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .header .links {
+            display: flex;
+            gap: 10px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .input-card h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #555;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            color: #999;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9ff;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .result-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .result-card h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .price-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 10px;
+            text-align: center;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .price-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .price-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .price-table tr:hover {
+            background: #e9ecef;
+        }
+
+        .diff-up {
+            color: #22c55e;
+            font-weight: 600;
+            background: rgba(34, 197, 94, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .diff-down {
+            color: #ef4444;
+            font-weight: 600;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .diff-same {
+            color: #6b7280;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            background: #f3f4f6;
+        }
+
+        .analysis-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .analysis-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .analysis-item h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analysis-item p {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.8;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+
+        .badge-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .badge-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box h4 {
+            color: #1976d2;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .info-box ul {
+            color: #424242;
+            font-size: 13px;
+            line-height: 1.8;
+            padding-left: 20px;
+        }
+
+        .highlight-value {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .mode-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .mode-indicator-reverse {
+            background: #667eea;
+            color: white;
+        }
+
+        .mode-indicator-compare {
+            background: #22c55e;
+            color: white;
+        }
+
+        .price-up {
+            background: #fef2f2;
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .price-down {
+            background: #f0fdf4;
+            color: #16a34a;
+            font-weight: 600;
+        }
+
+        .price-same {
+            background: #f9fafb;
+            color: #6b7280;
+        }
+
+        /* 滚动条样式 */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        /* 打印样式 */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .sidebar,
+            .btn {
+                display: none;
+            }
+
+            .header,
+            .result-card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+
+            .main-content {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>🔄</span>
+                价格体系过渡计算器
+            </h1>
+            <p>体系一（首重+续重）→ 体系二（公开价×折扣×新燃油）折扣反推与价差分析工具</p>
+            <div class="links">
+                <a href="multi-quote.html">📋 多产品报价单生成器</a>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- 左侧输入区域 -->
+            <div class="sidebar">
+                <div class="input-card">
+                    <h2>📋 参数输入</h2>
+
+                    <div class="form-group">
+                        <label>产品名称</label>
+                        <input type="text" id="productName" placeholder="例如：商业件标准" value="商业件标准">
+                    </div>
+
+                    <div class="form-group">
+                        <label>首重价格 (¥/0.5kg)</label>
+                        <input type="number" id="baseWeightPrice" placeholder="例如：50" value="50" onchange="calculate()">
+                    </div>
+
+                    <div class="form-group">
+                        <label>续重价格 (¥/0.5kg)</label>
+                        <input type="number" id="additionalWeightPrice" placeholder="例如：13" value="13" onchange="calculate()">
+                    </div>
+
+                    <div class="form-group">
+                        <label>体系一（老报价）燃油附加费率 (%)</label>
+                        <input type="number" id="oldFuelRate" placeholder="如果老报价已含燃油则填0" value="0" step="0.1" onchange="calculate()" min="0" max="100">
+                        <small>如果老报价已包含燃油费，请填写0%；如果需要单独加燃油，填写对应百分比</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>体系二（新报价）燃油附加费率 (%)</label>
+                        <input type="number" id="newFuelRate" placeholder="跟随官网浮动" value="25" step="0.1" onchange="calculate()" min="0" max="100">
+                        <small>新体系燃油费跟随官网浮动，可调整</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>计算模式</label>
+                        <select id="calcMode" class="form-select" onchange="toggleDiscountInput()" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                            <option value="reverse">反推折扣（基于老价推折扣）</option>
+                            <option value="compare">对比模式（代入折扣对比价格）</option>
+                        </select>
+                        <small>选择计算方式：反推折扣或代入折扣对比</small>
+                    </div>
+
+                    <div class="form-group" id="customerDiscountGroup" style="display: none;">
+                        <label>给客户的折扣 (%)</label>
+                        <input type="number" id="customerDiscount" placeholder="例如：50" value="50" step="0.1" onchange="calculate()" min="0" max="100">
+                        <small>输入你想给客户的折扣率，计算新价格并与老价格对比</small>
+                    </div>
+
+                    <div class="form-group" id="pdfExportGroup" style="display: none;">
+                        <label>公司名称（可选）</label>
+                        <input type="text" id="companyName" placeholder="例如：某某物流有限公司" value="">
+                        <small>导出PDF报价单时显示的公司名称</small>
+                    </div>
+
+                    <div class="form-group" id="effectiveDateGroup" style="display: none;">
+                        <label>价格生效日期</label>
+                        <input type="date" id="effectiveDate" value="">
+                        <small>报价单价格生效日期</small>
+                    </div>
+
+                    <div class="form-group" id="volumeFactorGroup" style="display: none;">
+                        <label>计抛系数</label>
+                        <select id="volumeFactor" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                            <option value="5000" selected>5000</option>
+                            <option value="6000">6000</option>
+                        </select>
+                        <small>体积计算公式：长×宽×高÷{计抛系数}</small>
+                    </div>
+
+                    <button class="btn" onclick="calculate()">
+                        <span>📊</span>
+                        计算折扣与价差
+                    </button>
+
+                    <!-- 大货报价输入 -->
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed #ddd;">
+                        <h3 style="font-size: 14px; color: #333; margin-bottom: 15px;">📦 大货报价 (20kg+)</h3>
+                        <p style="color: #666; font-size: 11px; margin-bottom: 10px;">手动输入各重量段老体系单价(¥/kg)，自动拆分新体系基础价+燃油</p>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+                            <div class="form-group">
+                                <label>21-30kg</label>
+                                <input type="number" id="oldPrice21_30" placeholder="21" value="21" step="0.1" onchange="calculate()">
+                            </div>
+
+                            <div class="form-group">
+                                <label>31-50kg</label>
+                                <input type="number" id="oldPrice31_50" placeholder="20" value="20" step="0.1" onchange="calculate()">
+                            </div>
+
+                            <div class="form-group">
+                                <label>51-100kg</label>
+                                <input type="number" id="oldPrice51_100" placeholder="19" value="19" step="0.1" onchange="calculate()">
+                            </div>
+
+                            <div class="form-group">
+                                <label>101-300kg</label>
+                                <input type="number" id="oldPrice101_300" placeholder="18" value="18" step="0.1" onchange="calculate()">
+                            </div>
+
+                            <div class="form-group">
+                                <label>301kg+</label>
+                                <input type="number" id="oldPrice301plus" placeholder="18" value="18" step="0.1" onchange="calculate()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 错误信息显示区域 -->
+                    <div id="errorBox" style="display: none; margin-top: 15px; padding: 10px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; font-size: 12px; color: #dc2626;">
+                        <strong>❌ 错误信息：</strong>
+                        <pre id="errorMessage" style="margin: 5px 0 0 0; white-space: pre-wrap; font-family: monospace; font-size: 11px;"></pre>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="exportToExcel()">
+                            <span>📥</span>
+                            导出 Excel
+                        </button>
+                        <button class="btn btn-secondary" id="exportPdfBtn" onclick="exportToPDF()" style="display: none;">
+                            <span>📄</span>
+                            导出 PDF 报价单
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.print()">
+                            <span>🖨️</span>
+                            打印
+                        </button>
+                    </div>
+                </div>
+
+                <div class="input-card">
+                    <h2>💡 使用说明</h2>
+
+                    <div class="info-box">
+                        <h4>核心原则</h4>
+                        <ul>
+                            <li>体系一和体系二的价格对比，都是在"含燃油"的状态下进行的</li>
+                            <li>折扣反推基于：保持客户含燃油总价一致</li>
+                            <li>价差计算：新价(含新燃油) - 老价(含老燃油)</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>关键提示</h4>
+                        <ul>
+                            <li>老燃油费率为0%表示老报价已包含燃油</li>
+                            <li>新燃油费率跟随官网每月浮动</li>
+                            <li>建议折扣略低于平均值，避免涨价</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧结果区域 -->
+            <div>
+                <!-- 价格对比表 -->
+                <div class="result-card">
+                    <h2>
+                        📊 价格对比表
+                        <small style="font-size: 12px; color: #666; font-weight: normal;">小货(0.5-20kg) + 大货(21kg+)</small>
+                        <span id="modeIndicator" class="mode-indicator mode-indicator-reverse">反推折扣模式</span>
+                    </h2>
+                    <div class="table-container">
+                        <table class="price-table" id="priceTable">
+                            <thead id="priceTableHead">
+                            </thead>
+                            <tbody id="priceTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 分析区域 -->
+                <div class="result-card">
+                    <h2>📈 分析结果</h2>
+                    <div class="analysis-section">
+                        <div class="analysis-item">
+                            <h3>📊 折扣率分析</h3>
+                            <p><strong>体系一燃油费率：</strong><span id="oldFuelRateDisplay" class="highlight-value">0%</span></p>
+                            <p><strong>体系二燃油费率：</strong><span id="newFuelRateDisplay" class="highlight-value">25%</span></p>
+                            <p><strong>平均折扣率：</strong><span id="avgDiscount" class="highlight-value">--</span></p>
+                            <p><strong>折扣范围：</strong><span id="discountRange" class="highlight-value">--</span></p>
+                            <p><strong>建议统一折扣：</strong><span id="suggestedDiscount" class="highlight-value">--</span></p>
+                        </div>
+
+                        <div class="analysis-item" id="fluctuationAnalysis">
+                            <h3>💰 价格波动分析</h3>
+                            <p><strong>对比说明：</strong><span id="compareDesc" class="highlight-value">--</span></p>
+                            <p><strong>涨价重量段：</strong><span id="upCount">0</span> 个 <span class="badge badge-warning">⚠️</span></p>
+                            <p><strong>降价重量段：</strong><span id="downCount">0</span> 个 <span class="badge badge-success">✓</span></p>
+                            <p><strong>持平重量段：</strong><span id="sameCount">0</span> 个 <span class="badge badge-success">✓</span></p>
+                            <p><strong>最大价差：</strong><span id="maxDiff" class="highlight-value">--</span></p>
+                            <p><strong>平均波动幅度：</strong><span id="avgFluctuation" class="highlight-value">--</span></p>
+                        </div>
+
+                        <div class="analysis-item" id="compareAnalysis" style="display: none;">
+                            <h3>📋 客户折扣对比分析</h3>
+                            <p><strong>客户折扣率：</strong><span id="customerDiscountDisplay" class="highlight-value">--</span></p>
+                            <p><strong>对比说明：</strong><span id="compareDesc2" class="highlight-value">--</span></p>
+                            <p><strong>涨价重量段：</strong><span id="upCount2">0</span> 个 <span class="badge badge-warning">⚠️</span></p>
+                            <p><strong>降价重量段：</strong><span id="downCount2">0</span> 个 <span class="badge badge-success">✓</span></p>
+                            <p><strong>持平重量段：</strong><span id="sameCount2">0</span> 个 <span class="badge badge-success">✓</span></p>
+                            <p><strong>最大价差：</strong><span id="maxDiff2" class="highlight-value">--</span></p>
+                            <p><strong>平均波动幅度：</strong><span id="avgFluctuation2" class="highlight-value">--</span></p>
+                            <p><strong>涨价总金额：</strong><span id="totalUpAmount" class="highlight-value">--</span></p>
+                            <p><strong>降价总金额：</strong><span id="totalDownAmount" class="highlight-value">--</span></p>
+                        </div>
+
+                        <div class="analysis-item">
+                            <h3>🎯 过渡建议</h3>
+                            <p id="transitionAdvice">--</p>
+                        </div>
+
+                        <!-- 大货价差分析 -->
+                        <div class="analysis-item">
+                            <h3>📦 大货价差分析 (20kg+)</h3>
+                            <p><strong>新体系燃油费率：</strong><span id="largeNewFuelRate" class="highlight-value">25%</span></p>
+                            <p><strong>涨价段：</strong><span id="largeUpCount">0</span> 个 <span class="badge badge-warning">⚠️</span></p>
+                            <p><strong>降价段：</strong><span id="largeDownCount">0</span> 个 <span class="badge badge-success">✓</span></p>
+                            <p><strong>持平段：</strong><span id="largeSameCount">0</span> 个 <span class="badge badge-success">✓</span></p>
+                            <p><strong>大货建议：</strong><span id="largeTransitionAdvice">--</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- html2canvas 用于将HTML渲染为图片 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- jsPDF 核心库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        // 公开价表（体系二公开价，不含燃油）
+        const publicPrices = {
+            0.5: 295, 1: 370, 1.5: 445, 2: 520, 2.5: 595,
+            3: 670, 3.5: 750, 4: 830, 4.5: 910, 5: 990,
+            5.5: 1070, 6: 1150, 6.5: 1230, 7: 1310,
+            7.5: 1390, 8: 1470, 8.5: 1550, 9: 1630,
+            9.5: 1710, 10: 1790, 10.5: 1870, 11: 1950,
+            11.5: 2030, 12: 2110, 12.5: 2190, 13: 2270,
+            13.5: 2350, 14: 2430, 14.5: 2510, 15: 2590,
+            15.5: 2670, 16: 2750, 16.5: 2830, 17: 2910,
+            17.5: 2990, 18: 3070, 18.5: 3150, 19: 3230,
+            19.5: 3310, 20: 3390
+        };
+
+        let currentResults = [];
+        let logoDataUrl = '';
+
+        // 页面加载时预加载 logo 图片
+        function preloadLogo() {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function() {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        logoDataUrl = canvas.toDataURL('image/png');
+                        console.log('Logo loaded successfully, length:', logoDataUrl.length);
+                        resolve(logoDataUrl);
+                    } catch (e) {
+                        console.error('Canvas conversion failed:', e);
+                        reject(e);
+                    }
+                };
+                img.onerror = function(e) {
+                    console.error('Failed to load logo:', e);
+                    // 尝试使用 fetch 获取图片
+                    fetch('images/ydh-logo-header.png')
+                        .then(resp => resp.blob())
+                        .then(blob => {
+                            return new Promise((res, rej) => {
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                    logoDataUrl = reader.result;
+                                    console.log('Logo loaded via fetch, length:', logoDataUrl.length);
+                                    res(logoDataUrl);
+                                };
+                                reader.onerror = rej;
+                                reader.readAsDataURL(blob);
+                            });
+                        })
+                        .then(resolve)
+                        .catch(reject);
+                };
+                img.src = 'https://raw.githubusercontent.com/wesleywangll/price-calculator/main/images/ydh-logo-header.png';
+            });
+        }
+        // 页面加载时预加载logo（不阻塞）
+        preloadLogo().catch(() => console.log('Logo preload failed, will use fallback'));
+
+        function toggleDiscountInput() {
+            const mode = document.getElementById('calcMode').value;
+            const discountGroup = document.getElementById('customerDiscountGroup');
+            const pdfExportGroup = document.getElementById('pdfExportGroup');
+            const effectiveDateGroup = document.getElementById('effectiveDateGroup');
+            const volumeFactorGroup = document.getElementById('volumeFactorGroup');
+            const fluctuationAnalysis = document.getElementById('fluctuationAnalysis');
+            const compareAnalysis = document.getElementById('compareAnalysis');
+            const modeIndicator = document.getElementById('modeIndicator');
+            const exportPdfBtn = document.getElementById('exportPdfBtn');
+
+            // 设置默认生效日期为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('effectiveDate').value = today;
+
+            if (mode === 'compare') {
+                discountGroup.style.display = 'block';
+                pdfExportGroup.style.display = 'block';
+                effectiveDateGroup.style.display = 'block';
+                volumeFactorGroup.style.display = 'block';
+                fluctuationAnalysis.style.display = 'none';
+                compareAnalysis.style.display = 'block';
+                modeIndicator.textContent = '对比模式';
+                modeIndicator.className = 'mode-indicator mode-indicator-compare';
+                exportPdfBtn.style.display = 'block';
+            } else {
+                discountGroup.style.display = 'none';
+                pdfExportGroup.style.display = 'none';
+                effectiveDateGroup.style.display = 'none';
+                volumeFactorGroup.style.display = 'none';
+                fluctuationAnalysis.style.display = 'block';
+                compareAnalysis.style.display = 'none';
+                modeIndicator.textContent = '反推折扣模式';
+                modeIndicator.className = 'mode-indicator mode-indicator-reverse';
+                exportPdfBtn.style.display = 'none';
+            }
+
+            calculate();
+        }
+
+        function calculate() {
+            const basePrice = parseFloat(document.getElementById('baseWeightPrice').value);
+            const additionalPrice = parseFloat(document.getElementById('additionalWeightPrice').value);
+            const oldFuelRate = parseFloat(document.getElementById('oldFuelRate').value) / 100;
+            const newFuelRate = parseFloat(document.getElementById('newFuelRate').value) / 100;
+            const mode = document.getElementById('calcMode').value;
+
+            const tbody = document.getElementById('priceTableBody');
+            const thead = document.getElementById('priceTableHead');
+            tbody.innerHTML = '';
+            thead.innerHTML = '';
+
+            let diffCount = { up: 0, down: 0, same: 0 };
+            const results = [];
+            let customerDiscount = 0;
+
+            // 按顺序遍历所有重量段（0.5kg - 20kg，每0.5kg一档）
+            const sortedWeights = Object.keys(publicPrices).sort((a, b) => parseFloat(a) - parseFloat(b));
+
+            // 设置表头
+            if (mode === 'reverse') {
+                // 反推折扣模式
+                thead.innerHTML = `
+                    <tr>
+                        <th>重量</th>
+                        <th>公开价</th>
+                        <th>体系一<br><small>(不含燃油)</small></th>
+                        <th>体系一<br><small>(含老燃油)</small></th>
+                        <th>体系二<br><small>(不含燃油)</small></th>
+                        <th>体系二<br><small>(含新燃油)</small></th>
+                        <th>反推折扣</th>
+                        <th>价差</th>
+                        <th>波动</th>
+                    </tr>
+                `;
+            } else {
+                // 对比模式
+                customerDiscount = parseFloat(document.getElementById('customerDiscount').value) / 100;
+                thead.innerHTML = `
+                    <tr>
+                        <th>重量</th>
+                        <th>公开价</th>
+                        <th>老报价<br><small>(含老燃油)</small></th>
+                        <th>新报价<br><small>(含新燃油)</small></th>
+                        <th>价差</th>
+                        <th>波动</th>
+                        <th>变化</th>
+                    </tr>
+                `;
+            }
+
+            for (let weight of sortedWeights) {
+                const publicPrice = publicPrices[weight];
+                const additionalCount = Math.ceil((weight - 0.5) / 0.5);
+
+                // 体系一价格（不含燃油）= 首重 + 续重
+                const oldPriceNoFuel = basePrice + additionalPrice * additionalCount;
+
+                // 体系一价格（含老燃油）= 旧价 × (1 + 老燃油费率)
+                const oldPriceWithFuel = oldPriceNoFuel * (1 + oldFuelRate);
+
+                let discount, newPriceWithFuel, newPriceNoFuel, diff, fluctuation;
+
+                if (mode === 'reverse') {
+                    // 反推折扣模式
+                    // 反推折扣：旧价(含老燃油) = 公开价 × 折扣 × (1 + 新燃油费率)
+                    // 折扣 = 旧价(含老燃油) / [公开价 × (1 + 新燃油费率)]
+                    discount = oldPriceWithFuel / (publicPrice * (1 + newFuelRate));
+
+                    // 体系二价格（含新燃油）= 公开价 × 折扣 × (1 + 新燃油费率)
+                    newPriceWithFuel = publicPrice * discount * (1 + newFuelRate);
+
+                    // 体系二价格（不含燃油）= 公开价 × 折扣
+                    newPriceNoFuel = publicPrice * discount;
+
+                    // 价差 = 新价(含新燃油) - 旧价(含老燃油)
+                    diff = newPriceWithFuel - oldPriceWithFuel;
+                    fluctuation = ((diff / oldPriceWithFuel) * 100).toFixed(2);
+
+                    results.push({
+                        weight,
+                        publicPrice,
+                        oldPriceNoFuel,
+                        oldPriceWithFuel,
+                        newPriceNoFuel,
+                        newPriceWithFuel,
+                        discount,
+                        diff,
+                        fluctuation
+                    });
+                } else {
+                    // 对比模式
+                    // 体系二价格（含新燃油）= 公开价 × 客户折扣 × (1 + 新燃油费率)
+                    newPriceWithFuel = publicPrice * customerDiscount * (1 + newFuelRate);
+
+                    // 价差 = 新价(含新燃油) - 老价(含老燃油)
+                    diff = newPriceWithFuel - oldPriceWithFuel;
+                    fluctuation = ((diff / oldPriceWithFuel) * 100).toFixed(2);
+
+                    results.push({
+                        weight,
+                        publicPrice,
+                        oldPriceWithFuel,
+                        newPriceWithFuel,
+                        diff,
+                        fluctuation
+                    });
+                }
+
+                // 统计
+                if (diff > 0.01) diffCount.up++;
+                else if (diff < -0.01) diffCount.down++;
+                else diffCount.same++;
+            }
+
+            currentResults = results;
+
+            // 渲染小货表格
+            results.forEach(item => {
+                const row = document.createElement('tr');
+
+                if (mode === 'reverse') {
+                    // 反推折扣模式
+                    let diffClass, diffText;
+                    if (item.diff > 0.01) {
+                        diffClass = 'diff-up';
+                        diffText = '+' + item.diff.toFixed(2);
+                    } else if (item.diff < -0.01) {
+                        diffClass = 'diff-down';
+                        diffText = item.diff.toFixed(2);
+                    } else {
+                        diffClass = 'diff-same';
+                        diffText = '0.00';
+                    }
+
+                    row.innerHTML = `
+                        <td>${item.weight}</td>
+                        <td>¥${item.publicPrice}</td>
+                        <td>¥${item.oldPriceNoFuel.toFixed(2)}</td>
+                        <td>¥${item.oldPriceWithFuel.toFixed(2)}</td>
+                        <td>¥${item.newPriceNoFuel.toFixed(2)}</td>
+                        <td>¥${item.newPriceWithFuel.toFixed(2)}</td>
+                        <td>${(item.discount * 100).toFixed(2)}%</td>
+                        <td><span class="${diffClass}">${diffText}</span></td>
+                        <td>${item.fluctuation}%</td>
+                    `;
+                } else {
+                    // 对比模式
+                    let diffClass, diffText, changeText;
+                    if (item.diff > 0.01) {
+                        diffClass = 'price-up';
+                        diffText = '+' + item.diff.toFixed(2);
+                        changeText = '↑ 涨价';
+                    } else if (item.diff < -0.01) {
+                        diffClass = 'price-down';
+                        diffText = item.diff.toFixed(2);
+                        changeText = '↓ 降价';
+                    } else {
+                        diffClass = 'price-same';
+                        diffText = '0.00';
+                        changeText = '→ 持平';
+                    }
+
+                    row.innerHTML = `
+                        <td>${item.weight}</td>
+                        <td>¥${item.publicPrice}</td>
+                        <td>¥${item.oldPriceWithFuel.toFixed(2)}</td>
+                        <td>¥${item.newPriceWithFuel.toFixed(2)}</td>
+                        <td><span class="${diffClass}">${diffText}</span></td>
+                        <td>${item.fluctuation}%</td>
+                        <td><span class="${diffClass}">${changeText}</span></td>
+                    `;
+                }
+                tbody.appendChild(row);
+            });
+
+            // 更新分析结果
+            if (mode === 'reverse') {
+                // 反推折扣模式分析
+                const avgDiscount = results.reduce((sum, r) => sum + r.discount, 0) / results.length;
+                const maxDiff = Math.max(...results.map(r => Math.abs(r.diff)));
+                const avgFluctuation = Math.abs(results.reduce((sum, r) => sum + r.diff, 0) / results.reduce((sum, r) => sum + r.oldPriceWithFuel, 0) * 100);
+
+                document.getElementById('oldFuelRateDisplay').textContent = (oldFuelRate * 100).toFixed(1) + '%';
+                document.getElementById('newFuelRateDisplay').textContent = (newFuelRate * 100).toFixed(1) + '%';
+                document.getElementById('avgDiscount').textContent = (avgDiscount * 100).toFixed(2) + '%';
+                document.getElementById('discountRange').textContent = (Math.min(...results.map(r => r.discount)) * 100).toFixed(2) + '% - ' + (Math.max(...results.map(r => r.discount)) * 100).toFixed(2) + '%';
+                const suggested = Math.floor(avgDiscount * 1000) / 1000;
+                document.getElementById('suggestedDiscount').textContent = (suggested * 100).toFixed(2) + '%（略低于平均值）';
+
+                document.getElementById('compareDesc').textContent = `新价格(含新燃油${(newFuelRate * 100).toFixed(1)}%) vs 老价格(含老燃油${(oldFuelRate * 100).toFixed(1)}%)`;
+                document.getElementById('upCount').textContent = diffCount.up;
+                document.getElementById('downCount').textContent = diffCount.down;
+                document.getElementById('sameCount').textContent = diffCount.same;
+                document.getElementById('maxDiff').textContent = '¥' + maxDiff.toFixed(2);
+                document.getElementById('avgFluctuation').textContent = avgFluctuation.toFixed(2) + '%';
+
+                const adviceEl = document.getElementById('transitionAdvice');
+                if (avgFluctuation < 1) {
+                    adviceEl.innerHTML = '✅ <strong>价格波动较小（<1%），建议直接过渡</strong>';
+                } else if (avgFluctuation < 3) {
+                    adviceEl.innerHTML = '⚠️ <strong>价格波动适中（<3%），建议与客户沟通后过渡</strong>';
+                } else {
+                    adviceEl.innerHTML = '❌ <strong>价格波动较大（>3%），建议调整折扣率或分批过渡</strong>';
+                }
+            } else {
+                // 对比模式分析
+                const maxDiff = Math.max(...results.map(r => Math.abs(r.diff)));
+                const avgFluctuation = Math.abs(results.reduce((sum, r) => sum + r.diff, 0) / results.reduce((sum, r) => sum + r.oldPriceWithFuel, 0) * 100);
+
+                const totalUpAmount = results.filter(r => r.diff > 0.01).reduce((sum, r) => sum + r.diff, 0);
+                const totalDownAmount = results.filter(r => r.diff < -0.01).reduce((sum, r) => sum + Math.abs(r.diff), 0);
+
+                document.getElementById('customerDiscountDisplay').textContent = (customerDiscount * 100).toFixed(1) + '%';
+                document.getElementById('compareDesc2').textContent = `新价格(折扣${(customerDiscount * 100).toFixed(1)}%+燃油${(newFuelRate * 100).toFixed(1)}%) vs 老价格(燃油${(oldFuelRate * 100).toFixed(1)}%)`;
+                document.getElementById('upCount2').textContent = diffCount.up;
+                document.getElementById('downCount2').textContent = diffCount.down;
+                document.getElementById('sameCount2').textContent = diffCount.same;
+                document.getElementById('maxDiff2').textContent = '¥' + maxDiff.toFixed(2);
+                document.getElementById('avgFluctuation2').textContent = avgFluctuation.toFixed(2) + '%';
+                document.getElementById('totalUpAmount').textContent = '¥' + totalUpAmount.toFixed(2);
+                document.getElementById('totalDownAmount').textContent = '¥' + totalDownAmount.toFixed(2);
+
+                const adviceEl = document.getElementById('transitionAdvice');
+                if (totalUpAmount > totalDownAmount) {
+                    const netIncrease = (totalUpAmount - totalDownAmount).toFixed(2);
+                    adviceEl.innerHTML = '⚠️ <strong>总体涨价 ¥' + netIncrease + '</strong><br>建议向客户说明燃油费率变化，或调整折扣率';
+                } else if (totalUpAmount < totalDownAmount) {
+                    const netDecrease = (totalDownAmount - totalUpAmount).toFixed(2);
+                    adviceEl.innerHTML = '✅ <strong>总体降价 ¥' + netDecrease + '</strong><br>客户可获得优惠，有利于过渡';
+                } else {
+                    adviceEl.innerHTML = '✅ <strong>总体持平</strong><br>价格体系过渡对客户影响最小';
+                }
+            }
+
+            // 获取大货输入并计算
+            calculateLarge();
+        }
+
+        function exportToExcel() {
+            if (currentResults.length === 0) {
+                alert('请先点击"计算折扣与价差"按钮进行计算');
+                return;
+            }
+
+            const mode = document.getElementById('calcMode').value;
+            let csvContent, fileName;
+
+            if (mode === 'reverse') {
+                // 反推折扣模式导出
+                csvContent = '重量,公开价,体系一(不含燃油),体系一(含老燃油),体系二(不含燃油),体系二(含新燃油),反推折扣,价差,波动\n';
+
+                currentResults.forEach(item => {
+                    const row = [
+                        item.weight,
+                        item.publicPrice,
+                        item.oldPriceNoFuel.toFixed(2),
+                        item.oldPriceWithFuel.toFixed(2),
+                        item.newPriceNoFuel.toFixed(2),
+                        item.newPriceWithFuel.toFixed(2),
+                        (item.discount * 100).toFixed(2) + '%',
+                        item.diff.toFixed(2),
+                        item.fluctuation + '%'
+                    ];
+                    csvContent += row.join(',') + '\n';
+                });
+
+                // 添加分析摘要
+                csvContent += '\n\n=== 分析摘要 ===\n';
+                csvContent += `平均折扣率,${(currentResults.reduce((sum, r) => sum + r.discount, 0) / currentResults.length * 100).toFixed(2)}%\n`;
+                csvContent += `折扣范围,${Math.min(...currentResults.map(r => r.discount)) * 100}% - ${Math.max(...currentResults.map(r => r.discount)) * 100}%\n`;
+                csvContent += `最大价差,¥${Math.max(...currentResults.map(r => Math.abs(r.diff))).toFixed(2)}\n`;
+                csvContent += `平均波动幅度,${(Math.abs(currentResults.reduce((sum, r) => sum + r.diff, 0) / currentResults.reduce((sum, r) => sum + r.oldPriceWithFuel, 0) * 100)).toFixed(2)}%\n`;
+
+                fileName = '价格体系反推折扣分析_' + new Date().toISOString().slice(0, 10) + '.csv';
+            } else {
+                // 对比模式导出
+                csvContent = '重量,公开价,老报价(含老燃油),新报价(含新燃油),价差,波动,变化\n';
+
+                currentResults.forEach(item => {
+                    let changeText;
+                    if (item.diff > 0.01) {
+                        changeText = '涨价';
+                    } else if (item.diff < -0.01) {
+                        changeText = '降价';
+                    } else {
+                        changeText = '持平';
+                    }
+
+                    const row = [
+                        item.weight,
+                        item.publicPrice,
+                        item.oldPriceWithFuel.toFixed(2),
+                        item.newPriceWithFuel.toFixed(2),
+                        item.diff.toFixed(2),
+                        item.fluctuation + '%',
+                        changeText
+                    ];
+                    csvContent += row.join(',') + '\n';
+                });
+
+                // 添加分析摘要
+                const totalUpAmount = currentResults.filter(r => r.diff > 0.01).reduce((sum, r) => sum + r.diff, 0);
+                const totalDownAmount = currentResults.filter(r => r.diff < -0.01).reduce((sum, r) => sum + Math.abs(r.diff), 0);
+
+                csvContent += '\n\n=== 分析摘要 ===\n';
+                csvContent += `客户折扣率,${(parseFloat(document.getElementById('customerDiscount').value)).toFixed(1)}%\n`;
+                csvContent += `最大价差,¥${Math.max(...currentResults.map(r => Math.abs(r.diff))).toFixed(2)}\n`;
+                csvContent += `平均波动幅度,${(Math.abs(currentResults.reduce((sum, r) => sum + r.diff, 0) / currentResults.reduce((sum, r) => sum + r.oldPriceWithFuel, 0) * 100)).toFixed(2)}%\n`;
+                csvContent += `涨价总金额,¥${totalUpAmount.toFixed(2)}\n`;
+                csvContent += `降价总金额,¥${totalDownAmount.toFixed(2)}\n`;
+
+                fileName = '价格体系客户折扣对比分析_' + new Date().toISOString().slice(0, 10) + '.csv';
+            }
+
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('errorBox');
+            const errorMessage = document.getElementById('errorMessage');
+            if (errorBox && errorMessage) {
+                errorBox.style.display = 'block';
+                errorMessage.textContent = message;
+            }
+            console.error(message);
+        }
+
+        function hideError() {
+            const errorBox = document.getElementById('errorBox');
+            if (errorBox) {
+                errorBox.style.display = 'none';
+            }
+        }
+
+        async function exportToPDF() {
+            try {
+                hideError();
+
+                if (currentResults.length === 0) {
+                    alert('请先点击"计算折扣与价差"按钮进行计算');
+                    return;
+                }
+
+                if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+                    alert('PDF库未加载，请检查网络连接并刷新页面重试');
+                    return;
+                }
+
+                // 确保logo已加载
+                if (!logoDataUrl) {
+                    console.log('Logo not loaded yet, waiting...');
+                    await preloadLogo();
+                }
+
+                const productName = document.getElementById('productName').value || '商业件标准';
+                const customerDiscount = parseFloat(document.getElementById('customerDiscount').value) / 100;
+                const newFuelRate = parseFloat(document.getElementById('newFuelRate').value) / 100;
+                const companyName = document.getElementById('companyName').value || 'YDH 义达跨境';
+                const effectiveDate = document.getElementById('effectiveDate').value || new Date().toISOString().slice(0, 10);
+                const volumeFactor = document.getElementById('volumeFactor').value || '5000';
+
+                // 大货数据
+                const largeCargoPrices = {
+                    '21-30': parseFloat(document.getElementById('oldPrice21_30').value) || 0,
+                    '31-50': parseFloat(document.getElementById('oldPrice31_50').value) || 0,
+                    '51-100': parseFloat(document.getElementById('oldPrice51_100').value) || 0,
+                    '101-300': parseFloat(document.getElementById('oldPrice101_300').value) || 0,
+                    '301+': parseFloat(document.getElementById('oldPrice301plus').value) || 0
+                };
+
+                const tempDiv = document.createElement('div');
+                tempDiv.style.cssText = 'position:fixed;left:-9999px;top:0;width:190mm;padding:10mm;background:#fff;font-family:PingFang SC,Microsoft YaHei,Arial,sans-serif;color:#1a1a2e;';
+
+                // 第一页：1-10.5kg小货
+                const firstPageData = currentResults.filter(item => parseFloat(item.weight) <= 10.5);
+                let firstPageHtml = `
+                    <div style="width:100%;max-width:170mm;margin:0 auto;">
+                        <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+                            <tr><td style="padding:0;text-align:center;">
+                                <img src="${logoDataUrl || 'https://raw.githubusercontent.com/wesleywangll/price-calculator/main/images/ydh-logo-header.png'}" style="max-height:50px;" alt="义达跨境">
+                            </td></tr>
+                        </table>
+                        <h1 style="text-align:center;color:#333;font-size:20px;margin-bottom:10px;font-weight:bold;">义达跨境日本商业件产品价目表</h1>
+                        <div style="margin-bottom:4px;font-size:11px;"><strong>公司名称:</strong> ${companyName}</div>
+                        <div style="margin-bottom:4px;font-size:11px;"><strong>产品名称:</strong> ${productName}</div>
+                        <div style="margin-bottom:4px;font-size:11px;"><strong>价格生效日期:</strong> ${effectiveDate}</div>
+                        <div style="margin-bottom:4px;font-size:12px;"><strong style="color:#dc2626;">折扣率:</strong> <span style="color:#dc2626;font-weight:bold;">${(customerDiscount * 100).toFixed(1)}%</span></div>
+                        <div style="margin-bottom:8px;font-size:12px;"><strong style="color:#dc2626;">燃油附加费率:</strong> <span style="color:#dc2626;font-weight:bold;">${(newFuelRate * 100).toFixed(1)}%</span></div>
+
+                        <div style="margin-bottom:10px;"><span style="background:#1a237e;color:#fff;padding:3px 10px;border-radius:3px;font-size:9px;font-weight:600;">小件报价 (0.5-10.5kg)</span></div>
+                        <table style="width:100%;border-collapse:collapse;font-size:10px;">
+                            <thead>
+                                <tr style="background:#667eea;color:#fff;">
+                                    <th style="padding:6px;text-align:center;border:1px solid #ddd;">重量/kg</th>
+                                    <th style="padding:6px;text-align:center;border:1px solid #ddd;">公开价</th>
+                                    <th style="padding:6px;text-align:center;border:1px solid #ddd;">折扣后价格</th>
+                                    <th style="padding:6px;text-align:center;border:1px solid #ddd;">含燃油价格</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                firstPageData.forEach((item, idx) => {
+                    const p1 = item.publicPrice * customerDiscount;
+                    const p2 = p1 * (1 + newFuelRate);
+                    const bg = idx % 2 === 0 ? '#fff' : '#f5f5f5';
+                    firstPageHtml += `<tr style="background:${bg};"><td style="padding:5px;text-align:center;border:1px solid #ddd;">${item.weight}</td><td style="padding:5px;text-align:center;border:1px solid #ddd;">¥${item.publicPrice}</td><td style="padding:5px;text-align:center;border:1px solid #ddd;">¥${p1.toFixed(2)}</td><td style="padding:5px;text-align:center;border:1px solid #ddd;font-weight:600;">¥${p2.toFixed(2)}</td></tr>`;
+                });
+                firstPageHtml += '</tbody></table></div>';
+
+                // 第二页：11kg+小货 + 大货 + 备注
+                const secondPageData = currentResults.filter(item => parseFloat(item.weight) >= 11);
+                let largeRows = '';
+                const segments = ['21-30', '31-50', '51-100', '101-300', '301+'];
+                segments.forEach((seg, i) => {
+                    const oldP = largeCargoPrices[seg];
+                    const baseP = oldP / (1 + newFuelRate);
+                    const fuelP = baseP * newFuelRate;
+                    const totalP = baseP + fuelP;
+                    const bg = i % 2 === 0 ? '#fff' : '#f5f9fa';
+                    largeRows += `<tr style="background:${bg};"><td style="padding:5px;text-align:center;border:1px solid #ddd;">${seg}kg</td><td style="padding:5px;text-align:center;border:1px solid #ddd;">¥${baseP.toFixed(2)}/kg</td><td style="padding:5px;text-align:center;border:1px solid #ddd;color:#e65100;">+¥${fuelP.toFixed(2)}/kg</td><td style="padding:5px;text-align:center;border:1px solid #ddd;font-weight:600;">¥${totalP.toFixed(2)}/kg</td></tr>`;
+                });
+
+                let secondPageHtml = `
+                    <div style="width:100%;max-width:170mm;margin:0 auto;">
+                        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+                            <tr><td style="padding:0;text-align:center;">
+                                <img src="${logoDataUrl || 'https://raw.githubusercontent.com/wesleywangll/price-calculator/main/images/ydh-logo-header.png'}" style="max-height:40px;" alt="义达跨境">
+                            </td></tr>
+                        </table>
+                        <h2 style="text-align:center;color:#333;font-size:16px;margin-bottom:8px;font-weight:bold;">义达跨境日本商业件产品价目表（续）</h2>
+
+                        <div style="margin-bottom:10px;"><span style="background:#1a237e;color:#fff;padding:3px 10px;border-radius:3px;font-size:9px;font-weight:600;">小件报价 (11kg起)</span></div>
+                        <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:15px;">
+                            <thead>
+                                <tr style="background:#667eea;color:#fff;">
+                                    <th style="padding:6px;text-align:center;border:1px solid #ddd;">重量/kg</th>
+                                    <th style="padding:6px;text-align:center;border:1px solid #ddd;">公开价</th>
+                                    <th style="padding:6px;text-align:center;border:1px solid #ddd;">折扣后价格</th>
+                                    <th style="padding:6px;text-align:center;border:1px solid #ddd;">含燃油价格</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                secondPageData.forEach((item, idx) => {
+                    const p1 = item.publicPrice * customerDiscount;
+                    const p2 = p1 * (1 + newFuelRate);
+                    const bg = idx % 2 === 0 ? '#fff' : '#f5f5f5';
+                    secondPageHtml += `<tr style="background:${bg};"><td style="padding:5px;text-align:center;border:1px solid #ddd;">${item.weight}</td><td style="padding:5px;text-align:center;border:1px solid #ddd;">¥${item.publicPrice}</td><td style="padding:5px;text-align:center;border:1px solid #ddd;">¥${p1.toFixed(2)}</td><td style="padding:5px;text-align:center;border:1px solid #ddd;font-weight:600;">¥${p2.toFixed(2)}</td></tr>`;
+                });
+                secondPageHtml += '</tbody></table>';
+
+                secondPageHtml += `
+                        <div style="padding:10px 14px;background:#fafafa;border-radius:4px;border:1px solid #e0e0e0;font-size:9px;color:#37474f;">
+                            <p style="font-weight:600;margin:0 0 6px;">备注说明</p>
+                            <p style="margin:2px 0;">1. 以上公开价适用于出口预付商业件</p>
+                            <p style="margin:2px 0;">2. 体积计算公式：长(CM)×宽(CM)×高(CM)÷${volumeFactor}</p>
+                            <p style="margin:2px 0;">3. 计价单位:20kg以内（含）为0.5kg，不足0.5kg按0.5kg计算；20kg以上为1kg</p>
+                            <p style="margin:2px 0;">4. 增值服务附加费可咨询 <strong>400-888-1378</strong></p>
+                            <p style="margin:2px 0;">5. 价格调整生效请登录: <a href="https://www.ydhex.com/" style="color:#667eea;">https://www.ydhex.com/</a></p>
+                            <p style="margin:2px 0;">6. 其它超区费、超尺寸费、税金收取等详情请联系您的义达客户经理</p>
+                        </div>
+                        <div style="margin-top:15px;text-align:center;font-size:10px;color:#999;">义达跨境 | https://www.ydhex.com</div>
+                    </div>
+                `;
+
+                // 创建PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const margin = 15;
+                const contentWidth = pdfWidth - margin * 2;
+                const renderPromises = [];
+
+                // 渲染两页
+                tempDiv.innerHTML = firstPageHtml;
+                tempDiv.style.width = contentWidth + 'mm';
+                document.body.appendChild(tempDiv);
+                renderPromises.push(html2canvas(tempDiv, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }));
+
+                tempDiv.innerHTML = secondPageHtml;
+                renderPromises.push(html2canvas(tempDiv, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }));
+
+                Promise.all(renderPromises).then(results => {
+                    document.body.removeChild(tempDiv);
+                    const [canvas1, canvas2] = results;
+
+                    // 删除默认空白页，添加两页内容
+                    doc.deletePage(1);
+                    doc.addPage();
+                    doc.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentWidth, (canvas1.height * contentWidth) / canvas1.width);
+                    doc.addPage();
+                    doc.addImage(canvas2.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentWidth, (canvas2.height * contentWidth) / canvas2.width);
+
+                    const companyDisplayName = companyName || '义达跨境';
+                    const fileName = `${companyDisplayName}_${productName}_${effectiveDate}.pdf`;
+                    doc.save(fileName);
+                }).catch(error => {
+                    if (tempDiv.parentNode) document.body.removeChild(tempDiv);
+                    showError('PDF生成失败: ' + error.message);
+                    alert('导出失败: ' + error.message);
+                });
+            } catch (error) {
+                showError('PDF导出异常: ' + error.message);
+                alert('导出异常: ' + error.message);
+            }
+        }
+
+        // 页面加载时自动计算
+        window.onload = function() {
+            calculate();
+            calculateLarge();
+        };
+
+        // 大货价格计算 (20kg+)，追加到主表格
+        function calculateLarge() {
+            const newFuelRate = parseFloat(document.getElementById('newFuelRate').value) / 100;
+            const mode = document.getElementById('calcMode').value;
+
+            // 获取老体系单价（已含燃油）
+            const oldPrices = {
+                '21-30': parseFloat(document.getElementById('oldPrice21_30').value) || 0,
+                '31-50': parseFloat(document.getElementById('oldPrice31_50').value) || 0,
+                '51-100': parseFloat(document.getElementById('oldPrice51_100').value) || 0,
+                '101-300': parseFloat(document.getElementById('oldPrice101_300').value) || 0,
+                '301+': parseFloat(document.getElementById('oldPrice301plus').value) || 0
+            };
+
+            const tbody = document.getElementById('priceTableBody');
+
+            const segments = ['21-30', '31-50', '51-100', '101-300', '301+'];
+            const diffCount = { up: 0, down: 0, same: 0 };
+
+            segments.forEach(seg => {
+                const oldUnitPrice = oldPrices[seg];
+
+                // 老体系单价（含燃油）直接使用输入值
+                const oldTotal = oldUnitPrice;
+
+                // 新体系拆分：基础价 = 老单价 ÷ (1 + 燃油)
+                const newBasePrice = oldTotal / (1 + newFuelRate);
+                const newFuelAmount = newBasePrice * newFuelRate;
+                const newUnitTotal = newBasePrice + newFuelAmount;
+
+                // 价差（新单价 - 老单价，应该接近0）
+                const diff = newUnitTotal - oldTotal;
+                const fluctuation = oldTotal > 0 ? ((diff / oldTotal) * 100).toFixed(2) : 0;
+
+                // 统计
+                if (diff > 0.01) diffCount.up++;
+                else if (diff < -0.01) diffCount.down++;
+                else diffCount.same++;
+
+                // 渲染行
+                const row = document.createElement('tr');
+                row.style.backgroundColor = '#f8f9fa';
+
+                let diffClass, diffText, changeText;
+                if (diff > 0.01) {
+                    diffClass = 'price-up';
+                    diffText = '+' + diff.toFixed(2);
+                    changeText = '↑ 涨价';
+                } else if (diff < -0.01) {
+                    diffClass = 'price-down';
+                    diffText = diff.toFixed(2);
+                    changeText = '↓ 降价';
+                } else {
+                    diffClass = 'price-same';
+                    diffText = '0.00';
+                    changeText = '→ 持平';
+                }
+
+                if (mode === 'reverse') {
+                    // 反推折扣模式的大货行
+                    row.innerHTML = `
+                        <td><strong>${seg}kg</strong></td>
+                        <td>--</td>
+                        <td>--</td>
+                        <td>¥${oldUnitPrice.toFixed(2)}/kg</td>
+                        <td>¥${newBasePrice.toFixed(2)}/kg</td>
+                        <td>+¥${newFuelAmount.toFixed(2)}/kg</td>
+                        <td>¥${newUnitTotal.toFixed(2)}/kg</td>
+                        <td>--</td>
+                        <td><span class="${diffClass}">${diffText}</span></td>
+                        <td>${fluctuation}%</td>
+                    `;
+                } else {
+                    // 对比模式的大货行
+                    row.innerHTML = `
+                        <td><strong>${seg}kg</strong></td>
+                        <td>--</td>
+                        <td>¥${oldUnitPrice.toFixed(2)}/kg</td>
+                        <td>¥${newBasePrice.toFixed(2)}/kg + ¥${newFuelAmount.toFixed(2)}/kg</td>
+                        <td><span class="${diffClass}">${diffText}</span></td>
+                        <td>${fluctuation}%</td>
+                        <td><span class="${diffClass}">${changeText}</span></td>
+                    `;
+                }
+                tbody.appendChild(row);
+            });
+
+            // 更新分析结果
+            document.getElementById('largeNewFuelRate').textContent = (newFuelRate * 100).toFixed(0) + '%';
+            document.getElementById('largeUpCount').textContent = diffCount.up;
+            document.getElementById('largeDownCount').textContent = diffCount.down;
+            document.getElementById('largeSameCount').textContent = diffCount.same;
+
+            // 过渡建议
+            const adviceEl = document.getElementById('largeTransitionAdvice');
+            if (diffCount.up === 0 && diffCount.down === 0) {
+                adviceEl.innerHTML = '✅ <strong>价格持平</strong>，大货过渡无影响';
+            } else if (diffCount.up > 0 && diffCount.down === 0) {
+                adviceEl.innerHTML = '⚠️ <strong>全部涨价</strong>，需与客户沟通确认';
+            } else if (diffCount.down > 0 && diffCount.up === 0) {
+                adviceEl.innerHTML = '✅ <strong>全部降价</strong>，客户可获优惠';
+            } else {
+                adviceEl.innerHTML = '⚠️ <strong>有涨有降</strong>，需根据具体重量段报价';
+            }
+        }
+    </script>
+</body>
+</html>
